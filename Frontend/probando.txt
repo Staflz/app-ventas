@@ -1,1 +1,0 @@
-esto es un simple archivo de texto que cree para probar el git y el github
