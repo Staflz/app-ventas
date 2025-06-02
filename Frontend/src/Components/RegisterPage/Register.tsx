@@ -1,15 +1,18 @@
 import { useState } from "react";
 import Video from "../../assets/Video.mp4";
+import axios from "axios";
+import VerificationAlert from "../common/VerificationAlert";
 
 const Register = () => {
   const [form, setForm] = useState({ username: "", password: "", email: "" });
   const [errors, setErrors] = useState<string[]>([]);
+  const [showVerification, setShowVerification] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: string[] = [];
 
@@ -17,13 +20,35 @@ const Register = () => {
       newErrors.push("Digita un correo electrónico válido");
     }
 
-    if (form.username === "yaExiste") {
-      newErrors.push("El negocio ya existe");
+    if (form.password.length < 6) {
+      newErrors.push("La contraseña debe tener al menos 6 caracteres");
     }
 
     setErrors(newErrors);
+    
     if (newErrors.length === 0) {
-      console.log("Formulario válido:", form);
+      try {
+        const response = await axios.post('http://localhost:3000/api/auth/register', {
+          email: form.email,
+          password: form.password,
+          name: form.username
+        });
+
+        if (response.status === 201) {
+          setShowVerification(true);
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          const errorData = error.response.data;
+          if (Array.isArray(errorData.errors)) {
+            setErrors(errorData.errors.map((err: any) => err.msg));
+          } else {
+            setErrors([errorData.message || 'Error al registrar el usuario']);
+          }
+        } else {
+          setErrors(['Error al conectar con el servidor']);
+        }
+      }
     }
   };
 
@@ -51,10 +76,18 @@ const Register = () => {
               Rellena la siguiente información
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            {showVerification && (
+              <VerificationAlert 
+                email={form.email}
+                onClose={() => setShowVerification(false)}
+              />
+            )}
+
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div className="space-y-2 mb-6">
                   <input
+                    required
                     type="text"
                     name="username"
                     placeholder="Ingresa tu usuario"
@@ -68,6 +101,7 @@ const Register = () => {
 
                 <div className="space-y-2 mb-6">
                   <input
+                    required
                     type="password"
                     name="password"
                     placeholder="Ingresa tu contraseña"
@@ -81,6 +115,7 @@ const Register = () => {
 
                 <div className="space-y-2 mb-6">
                   <input
+                    required
                     type="email"
                     name="email"
                     placeholder="ejemplo@correo.com"

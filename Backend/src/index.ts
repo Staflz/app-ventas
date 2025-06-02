@@ -1,7 +1,19 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { supabase } from './supabaseClient';
+//
+import cors from 'cors';
+import authRoutes from './routes/auth.routes';
+//
 
 const app = express();
+
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:5173', // URL de tu frontend
+  credentials: true
+}));
+app.use(express.json());
+//
 
 function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -23,9 +35,13 @@ app.get('/check-supabase', asyncHandler(async (req: Request, res: Response) => {
   res.json({ message: 'Conexión a Supabase OK', data });
 }));
 
+// Rutas
+app.use('/api/auth', authRoutes);
+//
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
 
