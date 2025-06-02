@@ -1,12 +1,11 @@
 import { useState } from "react";
 import Video from "../../assets/Video.mp4";
 import axios from "axios";
-import VerificationAlert from "../common/VerificationAlert";
 
 const Register = () => {
   const [form, setForm] = useState({ username: "", password: "", email: "" });
   const [errors, setErrors] = useState<string[]>([]);
-  const [showVerification, setShowVerification] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -35,7 +34,7 @@ const Register = () => {
         });
 
         if (response.status === 201) {
-          setShowVerification(true);
+          setSuccess(true);
         }
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -76,71 +75,72 @@ const Register = () => {
               Rellena la siguiente información
             </p>
 
-            {showVerification && (
-              <VerificationAlert 
-                email={form.email}
-                onClose={() => setShowVerification(false)}
-              />
+            {success && (
+              <div className="mt-8 text-green-700 text-center bg-green-100 py-2 rounded-lg">
+                ¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta.
+              </div>
             )}
 
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-6">
-                <div className="space-y-2 mb-6">
-                  <input
-                    required
-                    type="text"
-                    name="username"
-                    placeholder="Ingresa tu usuario"
-                    value={form.username}
-                    onChange={handleChange}
-                    className="w-full bg-white/50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500
-                             focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
-                             transition-all duration-300"
-                  />
+            {!success && (
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-6">
+                  <div className="space-y-2 mb-6">
+                    <input
+                      required
+                      type="text"
+                      name="username"
+                      placeholder="Ingresa tu usuario"
+                      value={form.username}
+                      onChange={handleChange}
+                      className="w-full bg-white/50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500
+                               focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
+                               transition-all duration-300"
+                    />
+                  </div>
+
+                  <div className="space-y-2 mb-6">
+                    <input
+                      required
+                      type="password"
+                      name="password"
+                      placeholder="Ingresa tu contraseña"
+                      value={form.password}
+                      onChange={handleChange}
+                      className="w-full bg-white/50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500
+                               focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
+                               transition-all duration-300"
+                    />
+                  </div>
+
+                  <div className="space-y-2 mb-6">
+                    <input
+                      required
+                      type="email"
+                      name="email"
+                      placeholder="ejemplo@correo.com"
+                      value={form.email}
+                      onChange={handleChange}
+                      className="w-full bg-white/50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500
+                               focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
+                               transition-all duration-300"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2 mb-6">
-                  <input
-                    required
-                    type="password"
-                    name="password"
-                    placeholder="Ingresa tu contraseña"
-                    value={form.password}
-                    onChange={handleChange}
-                    className="w-full bg-white/50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500
-                             focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
-                             transition-all duration-300"
-                  />
+                <div className="flex justify-center pt-4">
+                  <button
+                    type="submit"
+                    className="px-8 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg
+                             font-semibold shadow-lg shadow-gray-900/30
+                             hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300
+                             transform transition-all duration-300 hover:scale-[1.02]
+                             active:scale-[0.98]"
+                  >
+                    Registrarse
+                  </button>
                 </div>
-
-                <div className="space-y-2 mb-6">
-                  <input
-                    required
-                    type="email"
-                    name="email"
-                    placeholder="ejemplo@correo.com"
-                    value={form.email}
-                    onChange={handleChange}
-                    className="w-full bg-white/50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500
-                             focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
-                             transition-all duration-300"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-center pt-4">
-                <button
-                  type="submit"
-                  className="px-8 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg
-                           font-semibold shadow-lg shadow-gray-900/30
-                           hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300
-                           transform transition-all duration-300 hover:scale-[1.02]
-                           active:scale-[0.98]"
-                >
-                  Registrarse
-                </button>
-              </div>
-            </form>
+              </form>
+            )}
 
             {errors.length > 0 && (
               <div className="mt-8 space-y-2">
