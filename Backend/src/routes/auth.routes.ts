@@ -223,4 +223,59 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
   }
 });
 
+// INICIO CAMBIOS LOGIN
+// Ruta de login
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+
+    // Usar el método signInWithPassword de Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      res.status(401).json({
+        message: 'Credenciales inválidas',
+        error: error.message
+      });
+      return;
+    }
+
+    // Obtener información adicional del usuario desde la tabla usuarios
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (userError) {
+      res.status(500).json({
+        message: 'Error al obtener información del usuario',
+        error: userError.message
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'Login exitoso',
+      user: {
+        ...data.user,
+        ...userData
+      },
+      session: data.session
+    });
+
+  } catch (error: unknown) {
+    console.error('Error en el login:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    res.status(500).json({
+      message: 'Error al iniciar sesión',
+      error: errorMessage
+    });
+  }
+});
+// FIN CAMBIOS LOGIN
+
 export default router; 
