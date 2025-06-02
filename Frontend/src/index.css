@@ -1,8 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+}
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: 600;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -16,7 +23,7 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: rgb(99, 107, 255);
   text-decoration: inherit;
 }
 a:hover {
@@ -41,18 +48,21 @@ button {
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  font-weight: 600;
+  font-family: "Montserrat", sans-serif;
+  background-color: #d5eeac;
   cursor: pointer;
   transition: border-color 0.25s;
+  width: 150px;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: #0ac047;
+  background-color: #535bf2;
+  color: #ffffff;
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px auto -webkit-focus-ring-color;
 }
 
 @media (prefers-color-scheme: light) {
@@ -66,4 +76,19 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.videoDiv{
+  position: relative;
+  display: flex;
+  flex-basis: 50%;
+  width: 70%;
+  height: 100%;
+  padding: 0 1.5rem;
+  text-align: center;
+  justify-content: center;
+  flex-direction: column;
+  margin: auto;
+  border-radius: 10px;
+  overflow: hidden;
 }
