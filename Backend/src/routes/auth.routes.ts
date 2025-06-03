@@ -36,20 +36,38 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
 
     const { email } = req.body;
 
-    // Buscar el usuario en auth.users para obtener el id
-    const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
+    // Buscar el usuario directamente en la tabla usuarios
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('id, email')
+      .eq('email', email)
+      .single();
+
     if (userError) {
+      console.error('Error al buscar usuario:', userError);
       res.status(500).json({ message: 'Error al buscar el usuario', error: userError.message });
       return;
     }
-    const user = users.find(u => u.email === email);
-    if (!user) {
+
+    if (!userData) {
+      console.log('Usuario no encontrado:', email);
       res.status(404).json({ message: 'Usuario no encontrado' });
       return;
     }
 
     // Generar código y expiración
-    const verificationCode = generateVerificationCode();
+    let verificationCode;
+    try {
+      verificationCode = generateVerificationCode();
+      if (!verificationCode || verificationCode.length !== 6) {
+        throw new Error('Código de verificación inválido');
+      }
+    } catch (error) {
+      console.error('Error al generar código de verificación:', error);
+      res.status(500).json({ message: 'Error al generar código de verificación' });
+      return;
+    }
+
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutos
 
     // Actualizar la tabla usuarios con el código y expiración
@@ -60,16 +78,26 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
         codigo_2fa_expires_at: expiresAt,
         is_2fa_enabled: false
       })
-      .eq('id', user.id);
+      .eq('id', userData.id);
 
     if (updateError) {
+      console.error('Error al actualizar usuario:', updateError);
       res.status(500).json({ message: 'Error al actualizar el usuario', error: updateError.message });
       return;
     }
 
     // Enviar el correo
-    const emailSent = await sendVerificationEmail(email, verificationCode);
-    if (!emailSent) {
+    try {
+      console.log('Intentando enviar correo a:', email);
+      const emailSent = await sendVerificationEmail(email, verificationCode);
+      if (!emailSent) {
+        console.error('Error al enviar correo: emailSent es false');
+        res.status(500).json({ message: 'Error al enviar el correo de verificación' });
+        return;
+      }
+      console.log('Correo enviado exitosamente a:', email);
+    } catch (error) {
+      console.error('Error al enviar correo:', error);
       res.status(500).json({ message: 'Error al enviar el correo de verificación' });
       return;
     }
@@ -94,20 +122,25 @@ router.post('/verify-code', verificationValidation, async (req: Request, res: Re
 
     const { email, code } = req.body;
 
-    // Buscar el usuario en Supabase
-    const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
+    // Buscar el usuario en la tabla usuarios
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('id, codigo_2fa, codigo_2fa_expires_at')
+      .eq('email', email)
+      .single();
     
     if (userError) {
+      console.error('Error al buscar usuario:', userError);
       res.status(500).json({
         message: 'Error al buscar el usuario',
-        error: userError.message
+        error: userError.message,
+        verified: false
       });
       return;
     }
 
-    const user = users.find(u => u.email === email);
-
-    if (!user) {
+    if (!userData) {
+      console.log('Usuario no encontrado:', email);
       res.status(404).json({
         message: 'Usuario no encontrado',
         verified: false
@@ -115,24 +148,33 @@ router.post('/verify-code', verificationValidation, async (req: Request, res: Re
       return;
     }
 
+    // Verificar si el código ha expirado
+    const now = new Date();
+    const expiresAt = new Date(userData.codigo_2fa_expires_at);
+    if (now > expiresAt) {
+      console.log('Código expirado para usuario:', email);
+      res.status(400).json({
+        message: 'El código de verificación ha expirado',
+        verified: false
+      });
+      return;
+    }
+
     // Verificar el código
-    const storedCode = user.user_metadata?.verification_code;
-    const isVerified = storedCode === code;
+    const isVerified = userData.codigo_2fa === code;
 
     if (isVerified) {
       // Actualizar el estado de verificación del usuario
-      const { error: updateError } = await supabase.auth.admin.updateUserById(
-        user.id,
-        {
-          user_metadata: {
-            ...user.user_metadata,
-            is_verified: true,
-            verification_code: null // Eliminar el código después de verificar
-          }
-        }
-      );
+      const { error: updateError } = await supabase
+        .from('usuarios')
+        .update({
+          codigo_2fa: null,
+          codigo_2fa_expires_at: null
+        })
+        .eq('id', userData.id);
 
       if (updateError) {
+        console.error('Error al actualizar usuario:', updateError);
         res.status(500).json({
           message: 'Error al actualizar el estado de verificación',
           error: updateError.message,
@@ -191,10 +233,10 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
       .insert([{
         id: userId,
         nombre: name,
+        email: email,
         rol: 'administrador',
         codigo_2fa: null,
-        codigo_2fa_expires_at: null,
-        is_2fa_enabled: false
+        codigo_2fa_expires_at: null
       }]);
 
     if (insertError) {

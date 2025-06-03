@@ -8,9 +8,8 @@ const Dashboard = () => {
   useEffect(() => {
     // Verificar si hay una sesión activa
     const storedUser = localStorage.getItem('user');
-    const storedSession = localStorage.getItem('session');
 
-    if (!storedUser || !storedSession) {
+    if (!storedUser) {
       navigate('/login');
       return;
     }

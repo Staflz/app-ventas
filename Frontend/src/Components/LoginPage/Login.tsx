@@ -2,6 +2,7 @@ import { useState } from "react";
 import Video from "../../assets/Video.mp4";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import VerificationAlert from '../common/VerificationAlert';
 
 // Frontend para la login page
 
@@ -10,6 +11,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [showVerification, setShowVerification] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -27,12 +30,8 @@ const Login = () => {
         password: form.password
       });
 
-      // Guardar la sesión en localStorage
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      localStorage.setItem('session', JSON.stringify(response.data.session));
-
-      // Redirigir al dashboard o página principal
-      navigate('/dashboard');
+      setPendingEmail(form.email);
+      setShowVerification(true);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         setError(error.response.data.message || 'Error al iniciar sesión');
@@ -42,6 +41,13 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleVerificationSuccess = () => {
+    console.log('handleVerificationSuccess llamado, guardando usuario y redirigiendo...');
+    localStorage.setItem('user', JSON.stringify({ email: pendingEmail }));
+    console.log('Usuario guardado, redirigiendo a dashboard...');
+    navigate('/dashboard');
   };
 
   return (
@@ -74,6 +80,13 @@ const Login = () => {
               </div>
             )}
 
+            {showVerification && pendingEmail ? (
+              <VerificationAlert
+                email={pendingEmail}
+                onVerificationSuccess={handleVerificationSuccess}
+                onClose={() => setShowVerification(false)}
+              />
+            ) : (
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div className="space-y-2 mb-6">
@@ -122,6 +135,7 @@ const Login = () => {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       </div>
