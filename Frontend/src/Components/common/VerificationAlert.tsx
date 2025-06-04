@@ -22,13 +22,16 @@ const VerificationAlert: React.FC<VerificationAlertProps> = ({
   const [requestError, setRequestError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   // Función para solicitar/generar el código de verificación
   const requestVerificationCode = async () => {
     setRequestingCode(true);
     setRequestError(null);
     setCodeSent(false);
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/request-verification-code', { email });
+      //const response = await axios.post('http://localhost:3000/api/auth/request-verification-code', { email });
+      const response = await axios.post(`${API_URL}/api/auth/request-verification-code`, { email });
       if (response.status === 200) {
         setCodeSent(true);
         console.log('Código enviado exitosamente');
@@ -52,7 +55,8 @@ const VerificationAlert: React.FC<VerificationAlertProps> = ({
     setError(null);
     try {
       console.log('Intentando verificar código...');
-      const response = await axios.post('http://localhost:3000/api/auth/verify-code', {
+      //const response = await axios.post('http://localhost:3000/api/auth/verify-code', {
+      const response = await axios.post(`${API_URL}/api/auth/verify-code`, {
         email,
         code
       });

@@ -14,6 +14,8 @@ const Login = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError(null); // Limpiar error cuando el usuario modifica el formulario
@@ -23,10 +25,10 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
+//const response = await//
+//axios.post('http://localhost:3000/api/auth/login', {
     try {
-      //const response = await//
-      axios.post('http://localhost:3000/api/auth/login', {
+      await axios.post(`${API_URL}/api/auth/login`, {
         email: form.email,
         password: form.password
       });

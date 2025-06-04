@@ -2,6 +2,8 @@ import { useState } from "react";
 import Video from "../../assets/Video.mp4";
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Register = () => {
   const [form, setForm] = useState({ username: "", password: "", email: "" });
   const [errors, setErrors] = useState<string[]>([]);
@@ -27,7 +29,8 @@ const Register = () => {
     
     if (newErrors.length === 0) {
       try {
-        const response = await axios.post('http://localhost:3000/api/auth/register', {
+        //const response = await axios.post('http://localhost:3000/api/auth/register', {
+        const response = await axios.post(`${API_URL}/api/auth/register`, {
           email: form.email,
           password: form.password,
           name: form.username
