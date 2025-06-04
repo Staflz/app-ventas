@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+//, useEffect//
+import React, { useState} from 'react';
 import { Alert, AlertTitle, Box, TextField, Button, CircularProgress } from '@mui/material';
 import axios from 'axios';
+
 
 interface VerificationAlertProps {
   email: string;
