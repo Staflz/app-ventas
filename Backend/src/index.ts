@@ -9,8 +9,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  //process.env.FRONTEND_URL"
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Permite origen dinámico
+  origin: ['http://localhost:5173', 'https://app-ventas-1.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
