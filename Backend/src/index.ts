@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 //
 import cors from 'cors';
 import authRoutes from './routes/auth.routes';
+import ventasRoutes from './routes/ventas.routes';
 //
 
 const app = express();
@@ -37,6 +38,7 @@ app.get('/check-supabase', asyncHandler(async (req: Request, res: Response) => {
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/ventas', ventasRoutes);
 //
 
 const PORT = process.env.PORT || 3000;

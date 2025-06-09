@@ -3,8 +3,21 @@ import { body, validationResult } from 'express-validator';
 import { Request, Response } from 'express';
 import { supabase } from '../supabaseClient';
 import { generateVerificationCode, sendVerificationEmail } from '../services/emailService';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
+
+// Configuración de Supabase Admin (con permisos elevados)
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 // Middleware de validación para el registro
 const registerValidation = [
@@ -87,19 +100,53 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
       codigo_2fa_expires_at: expiresAt,
       is_2fa_enabled: false
     };
-    console.log('Intentando actualizar usuario con datos:', updateData);
+    console.log('Intentando actualizar usuario con datos:', {
+      userId: userData.id,
+      updateData: updateData
+    });
 
-    const { error: updateError } = await supabase
+    // Primero verificar si el usuario existe y obtener su estado actual
+    const { data: currentUser, error: checkError } = await supabase
       .from('usuarios')
-      .update(updateData)
-      .eq('id', userData.id);
+      .select('id, codigo_2fa, codigo_2fa_expires_at, is_2fa_enabled')
+      .eq('id', userData.id)
+      .single();
+
+    if (checkError) {
+      console.error('Error al verificar usuario antes de actualizar:', {
+        code: checkError.code,
+        message: checkError.message,
+        details: checkError.details
+      });
+      res.status(500).json({ 
+        message: 'Error al verificar el usuario', 
+        error: checkError.message 
+      });
+      return;
+    }
+
+    console.log('Estado actual del usuario:', currentUser);
+
+    // Intentar la actualización
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('usuarios')
+      .update({
+        codigo_2fa: verificationCode,
+        codigo_2fa_expires_at: expiresAt,
+        is_2fa_enabled: false
+      })
+      .eq('id', userData.id)
+      .select('*')
+      .maybeSingle();
 
     if (updateError) {
       console.error('Error detallado al actualizar usuario:', {
         code: updateError.code,
         message: updateError.message,
         details: updateError.details,
-        hint: updateError.hint
+        hint: updateError.hint,
+        userId: userData.id,
+        attemptedUpdate: updateData
       });
       res.status(500).json({ 
         message: 'Error al actualizar el usuario', 
@@ -110,25 +157,87 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
       return;
     }
 
-    console.log('Usuario actualizado exitosamente');
+    if (!updatedUser) {
+      console.error('No se pudo actualizar el usuario - no se encontró después de la actualización:', {
+        userId: userData.id,
+        attemptedUpdate: updateData
+      });
+      res.status(500).json({ 
+        message: 'Error: No se pudo actualizar el usuario',
+        error: 'Usuario no encontrado después de la actualización'
+      });
+      return;
+    }
+
+    console.log('Usuario actualizado exitosamente:', {
+      id: updatedUser.id,
+      codigo_2fa: updatedUser.codigo_2fa,
+      codigo_2fa_expires_at: updatedUser.codigo_2fa_expires_at,
+      is_2fa_enabled: updatedUser.is_2fa_enabled
+    });
+
+    // Verificar que la actualización fue exitosa
+    if (updatedUser.codigo_2fa !== verificationCode) {
+      console.error('La actualización no se realizó correctamente:', {
+        expectedCode: verificationCode,
+        actualCode: updatedUser.codigo_2fa
+      });
+      res.status(500).json({ 
+        message: 'Error: La actualización no se realizó correctamente',
+        error: 'Verificación de actualización fallida'
+      });
+      return;
+    }
 
     // Enviar el correo
     try {
       console.log('Intentando enviar correo a:', email);
       const emailSent = await sendVerificationEmail(email, verificationCode);
       if (!emailSent) {
-        console.error('Error al enviar correo: emailSent es false');
+        // Si falla el envío del correo, revertir la actualización
+        console.error('Error al enviar correo, intentando revertir actualización');
+        const { error: revertError } = await supabase
+          .from('usuarios')
+          .update({
+            codigo_2fa: null,
+            codigo_2fa_expires_at: null,
+            is_2fa_enabled: false
+          })
+          .eq('id', userData.id);
+
+        if (revertError) {
+          console.error('Error al revertir actualización:', revertError);
+        }
+
         res.status(500).json({ message: 'Error al enviar el correo de verificación' });
         return;
       }
       console.log('Correo enviado exitosamente a:', email);
     } catch (error) {
-      console.error('Error al enviar correo:', error);
+      // Si falla el envío del correo, revertir la actualización
+      console.error('Error al enviar correo, intentando revertir actualización:', error);
+      const { error: revertError } = await supabase
+        .from('usuarios')
+        .update({
+          codigo_2fa: null,
+          codigo_2fa_expires_at: null,
+          is_2fa_enabled: false
+        })
+        .eq('id', userData.id);
+
+      if (revertError) {
+        console.error('Error al revertir actualización:', revertError);
+      }
+
       res.status(500).json({ message: 'Error al enviar el correo de verificación' });
       return;
     }
 
-    res.status(200).json({ message: 'Código de verificación enviado exitosamente' });
+    res.status(200).json({ 
+      message: 'Código de verificación enviado exitosamente',
+      verificationCode: verificationCode // Solo para debugging
+    });
+
   } catch (error: unknown) {
     console.error('Error general al solicitar código de verificación:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -147,16 +256,22 @@ router.post('/verify-code', verificationValidation, async (req: Request, res: Re
     }
 
     const { email, code } = req.body;
+    console.log('Verificando código para:', email);
 
-    // Buscar el usuario en la tabla usuarios
-    const { data: userData, error: userError } = await supabase
+    // Buscar el usuario en la tabla usuarios usando el cliente admin
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('usuarios')
       .select('id, codigo_2fa, codigo_2fa_expires_at')
       .eq('email', email)
       .single();
     
     if (userError) {
-      console.error('Error al buscar usuario:', userError);
+      console.error('Error al buscar usuario:', {
+        code: userError.code,
+        message: userError.message,
+        details: userError.details,
+        hint: userError.hint
+      });
       res.status(500).json({
         message: 'Error al buscar el usuario',
         error: userError.message,
@@ -174,6 +289,13 @@ router.post('/verify-code', verificationValidation, async (req: Request, res: Re
       return;
     }
 
+    console.log('Usuario encontrado:', {
+      id: userData.id,
+      email: email,
+      codigo_2fa: userData.codigo_2fa,
+      codigo_2fa_expires_at: userData.codigo_2fa_expires_at
+    });
+
     // Verificar si el código ha expirado
     const now = new Date();
     const expiresAt = new Date(userData.codigo_2fa_expires_at);
@@ -188,10 +310,15 @@ router.post('/verify-code', verificationValidation, async (req: Request, res: Re
 
     // Verificar el código
     const isVerified = userData.codigo_2fa === code;
+    console.log('Verificación de código:', {
+      codigoRecibido: code,
+      codigoAlmacenado: userData.codigo_2fa,
+      esValido: isVerified
+    });
 
     if (isVerified) {
-      // Actualizar el estado de verificación del usuario
-      const { error: updateError } = await supabase
+      // Actualizar el estado de verificación del usuario usando el cliente admin
+      const { error: updateError } = await supabaseAdmin
         .from('usuarios')
         .update({
           codigo_2fa: null,
@@ -200,7 +327,12 @@ router.post('/verify-code', verificationValidation, async (req: Request, res: Re
         .eq('id', userData.id);
 
       if (updateError) {
-        console.error('Error al actualizar usuario:', updateError);
+        console.error('Error al actualizar usuario:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint
+        });
         res.status(500).json({
           message: 'Error al actualizar el estado de verificación',
           error: updateError.message,
@@ -208,6 +340,8 @@ router.post('/verify-code', verificationValidation, async (req: Request, res: Re
         });
         return;
       }
+
+      console.log('Usuario actualizado exitosamente después de verificación');
     }
 
     res.status(200).json({
@@ -316,11 +450,11 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
   }
 });
 
-// INICIO CAMBIOS LOGIN
 // Ruta de login
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
+    console.log('Intento de login para:', email);
 
     // Usar el método signInWithPassword de Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -329,6 +463,11 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     });
 
     if (error) {
+      console.error('Error en autenticación:', {
+        code: error.code,
+        message: error.message,
+        status: error.status
+      });
       res.status(401).json({
         message: 'Credenciales inválidas',
         error: error.message
@@ -336,20 +475,45 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Obtener información adicional del usuario desde la tabla usuarios
-    const { data: userData, error: userError } = await supabase
+    console.log('Autenticación exitosa, ID del usuario:', data.user.id);
+
+    // Obtener información adicional del usuario desde la tabla usuarios usando el cliente admin
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('usuarios')
       .select('*')
       .eq('id', data.user.id)
       .single();
 
     if (userError) {
+      console.error('Error al obtener información del usuario:', {
+        code: userError.code,
+        message: userError.message,
+        details: userError.details,
+        hint: userError.hint,
+        userId: data.user.id
+      });
       res.status(500).json({
         message: 'Error al obtener información del usuario',
-        error: userError.message
+        error: userError.message,
+        details: userError.details
       });
       return;
     }
+
+    if (!userData) {
+      console.error('Usuario no encontrado en la tabla usuarios:', data.user.id);
+      res.status(404).json({
+        message: 'Usuario no encontrado en la base de datos',
+        error: 'El usuario existe en auth pero no en la tabla usuarios'
+      });
+      return;
+    }
+
+    console.log('Información del usuario obtenida exitosamente:', {
+      id: userData.id,
+      email: userData.email,
+      nombre: userData.nombre
+    });
 
     res.status(200).json({
       message: 'Login exitoso',
@@ -361,7 +525,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     });
 
   } catch (error: unknown) {
-    console.error('Error en el login:', error);
+    console.error('Error general en el login:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     res.status(500).json({
       message: 'Error al iniciar sesión',
@@ -369,6 +533,5 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     });
   }
 });
-// FIN CAMBIOS LOGIN
 
 export default router; 
