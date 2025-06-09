@@ -30,21 +30,28 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Errores de validación:', errors.array());
       res.status(400).json({ errors: errors.array() });
       return;
     }
 
     const { email } = req.body;
+    console.log('Buscando usuario con email:', email);
 
     // Buscar el usuario directamente en la tabla usuarios
     const { data: userData, error: userError } = await supabase
       .from('usuarios')
-      .select('id, email')
+      .select('id, email, nombre')
       .eq('email', email)
       .single();
 
     if (userError) {
-      console.error('Error al buscar usuario:', userError);
+      console.error('Error detallado al buscar usuario:', {
+        code: userError.code,
+        message: userError.message,
+        details: userError.details,
+        hint: userError.hint
+      });
       res.status(500).json({ message: 'Error al buscar el usuario', error: userError.message });
       return;
     }
@@ -55,6 +62,8 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
       return;
     }
 
+    console.log('Usuario encontrado:', userData);
+
     // Generar código y expiración
     let verificationCode;
     try {
@@ -62,6 +71,7 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
       if (!verificationCode || verificationCode.length !== 6) {
         throw new Error('Código de verificación inválido');
       }
+      console.log('Código generado:', verificationCode);
     } catch (error) {
       console.error('Error al generar código de verificación:', error);
       res.status(500).json({ message: 'Error al generar código de verificación' });
@@ -69,22 +79,38 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
     }
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutos
+    console.log('Fecha de expiración:', expiresAt);
 
     // Actualizar la tabla usuarios con el código y expiración
+    const updateData = {
+      codigo_2fa: verificationCode,
+      codigo_2fa_expires_at: expiresAt,
+      is_2fa_enabled: false
+    };
+    console.log('Intentando actualizar usuario con datos:', updateData);
+
     const { error: updateError } = await supabase
       .from('usuarios')
-      .update({
-        codigo_2fa: verificationCode,
-        codigo_2fa_expires_at: expiresAt,
-        is_2fa_enabled: false
-      })
+      .update(updateData)
       .eq('id', userData.id);
 
     if (updateError) {
-      console.error('Error al actualizar usuario:', updateError);
-      res.status(500).json({ message: 'Error al actualizar el usuario', error: updateError.message });
+      console.error('Error detallado al actualizar usuario:', {
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint
+      });
+      res.status(500).json({ 
+        message: 'Error al actualizar el usuario', 
+        error: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint
+      });
       return;
     }
+
+    console.log('Usuario actualizado exitosamente');
 
     // Enviar el correo
     try {
@@ -104,7 +130,7 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
 
     res.status(200).json({ message: 'Código de verificación enviado exitosamente' });
   } catch (error: unknown) {
-    console.error('Error al solicitar código de verificación:', error);
+    console.error('Error general al solicitar código de verificación:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     res.status(500).json({ message: 'Error al solicitar código de verificación', error: errorMessage });
   }
@@ -211,6 +237,7 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
     }
 
     const { email, password, name } = req.body;
+    console.log('Iniciando registro para:', { email, name });
 
     // Crear usuario en Supabase Auth
     const { data: userData, error: signUpError } = await supabase.auth.signUp({
@@ -220,6 +247,7 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
 
     const userId = userData.user?.id;
     if (signUpError || !userId) {
+      console.error('Error en signUp:', signUpError);
       res.status(400).json({
         message: 'Error al registrar el usuario',
         error: signUpError?.message || 'No se pudo obtener el ID del usuario'
@@ -227,36 +255,59 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
       return;
     }
 
+    console.log('Usuario creado en Auth con ID:', userId);
+
     // Insertar en la tabla usuarios
+    const userToInsert = {
+      id: userId,
+      nombre: name,
+      email: email,
+      rol: 'administrador',
+      codigo_2fa: null,
+      codigo_2fa_expires_at: null
+    };
+    
+    console.log('Intentando insertar usuario en tabla usuarios:', userToInsert);
+    
     const { error: insertError } = await supabase
       .from('usuarios')
-      .insert([{
-        id: userId,
-        nombre: name,
-        email: email,
-        rol: 'administrador',
-        codigo_2fa: null,
-        codigo_2fa_expires_at: null
-      }]);
+      .insert([userToInsert]);
 
     if (insertError) {
+      console.error('Error detallado en inserción:', {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint
+      });
+      
       // Si falla la inserción, eliminar el usuario de auth
-      await supabase.auth.admin.deleteUser(userId);
+      try {
+        await supabase.auth.admin.deleteUser(userId);
+        console.log('Usuario eliminado de auth después del error de inserción');
+      } catch (deleteError) {
+        console.error('Error al eliminar usuario de auth:', deleteError);
+      }
+      
       res.status(500).json({
         message: 'Error al guardar los datos adicionales del usuario',
-        error: insertError.message
+        error: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint
       });
       return;
     }
 
-    // Responder con éxito (Supabase enviará el correo de confirmación automáticamente)
+    console.log('Usuario insertado exitosamente en tabla usuarios');
+
+    // Responder con éxito
     res.status(201).json({
       message: 'Usuario registrado exitosamente. Por favor, revisa tu correo para confirmar tu cuenta.',
       success: true
     });
 
   } catch (error: unknown) {
-    console.error('Error en el registro:', error);
+    console.error('Error general en el registro:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     res.status(500).json({
       message: 'Error al registrar el usuario',
