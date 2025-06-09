@@ -51,8 +51,8 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
     const { email } = req.body;
     console.log('Buscando usuario con email:', email);
 
-    // Buscar el usuario directamente en la tabla usuarios
-    const { data: userData, error: userError } = await supabase
+    // Buscar el usuario directamente en la tabla usuarios usando el cliente admin
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('usuarios')
       .select('id, email, nombre')
       .eq('email', email)
@@ -94,19 +94,8 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutos
     console.log('Fecha de expiración:', expiresAt);
 
-    // Actualizar la tabla usuarios con el código y expiración
-    const updateData = {
-      codigo_2fa: verificationCode,
-      codigo_2fa_expires_at: expiresAt,
-      is_2fa_enabled: false
-    };
-    console.log('Intentando actualizar usuario con datos:', {
-      userId: userData.id,
-      updateData: updateData
-    });
-
     // Primero verificar si el usuario existe y obtener su estado actual
-    const { data: currentUser, error: checkError } = await supabase
+    const { data: currentUser, error: checkError } = await supabaseAdmin
       .from('usuarios')
       .select('id, codigo_2fa, codigo_2fa_expires_at, is_2fa_enabled')
       .eq('id', userData.id)
@@ -128,7 +117,7 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
     console.log('Estado actual del usuario:', currentUser);
 
     // Intentar la actualización
-    const { data: updatedUser, error: updateError } = await supabase
+    const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('usuarios')
       .update({
         codigo_2fa: verificationCode,
@@ -146,7 +135,11 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
         details: updateError.details,
         hint: updateError.hint,
         userId: userData.id,
-        attemptedUpdate: updateData
+        attemptedUpdate: {
+          codigo_2fa: verificationCode,
+          codigo_2fa_expires_at: expiresAt,
+          is_2fa_enabled: false
+        }
       });
       res.status(500).json({ 
         message: 'Error al actualizar el usuario', 
@@ -160,7 +153,11 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
     if (!updatedUser) {
       console.error('No se pudo actualizar el usuario - no se encontró después de la actualización:', {
         userId: userData.id,
-        attemptedUpdate: updateData
+        attemptedUpdate: {
+          codigo_2fa: verificationCode,
+          codigo_2fa_expires_at: expiresAt,
+          is_2fa_enabled: false
+        }
       });
       res.status(500).json({ 
         message: 'Error: No se pudo actualizar el usuario',
@@ -196,7 +193,7 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
       if (!emailSent) {
         // Si falla el envío del correo, revertir la actualización
         console.error('Error al enviar correo, intentando revertir actualización');
-        const { error: revertError } = await supabase
+        const { error: revertError } = await supabaseAdmin
           .from('usuarios')
           .update({
             codigo_2fa: null,
@@ -216,7 +213,7 @@ router.post('/request-verification-code', requestCodeValidation, async (req: Req
     } catch (error) {
       // Si falla el envío del correo, revertir la actualización
       console.error('Error al enviar correo, intentando revertir actualización:', error);
-      const { error: revertError } = await supabase
+      const { error: revertError } = await supabaseAdmin
         .from('usuarios')
         .update({
           codigo_2fa: null,
