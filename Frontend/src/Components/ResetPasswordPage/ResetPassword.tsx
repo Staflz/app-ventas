@@ -1,171 +1,129 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import Video from '../../assets/Video.mp4';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { IconButton } from '@mui/material';
+import { Button, TextField, Typography, Box, Container, Alert } from '@mui/material';
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-const ResetPassword = () => {
+const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
-  useEffect(() => {
-    // Verificar si hay un token en la URL
-    const token = searchParams.get('token');
-    if (!token) {
-      setError('Enlace de restablecimiento inválido o expirado');
-    }
-  }, [searchParams]);
+  // Leer token_hash y type de los query params
+  const params = new URLSearchParams(window.location.search);
+  const token_hash = params.get('token_hash');
+  const type = params.get('type');
+
+  console.log('[ResetPassword] token_hash:', token_hash, 'type:', type);
+
+  if (!token_hash || !type) {
+    console.log('[ResetPassword] No se encontró token_hash o type, renderizando error');
+    return (
+      <Container maxWidth="sm">
+        <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Alert severity="error">
+            Enlace inválido o expirado. Por favor, solicita un nuevo enlace de reseteo.
+          </Alert>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate('/login')}
+            sx={{ mt: 2 }}
+          >
+            Volver al login
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
+    setSuccess(null);
 
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      setIsLoading(false);
+    // Validar contraseñas
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
-      setIsLoading(false);
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
       return;
     }
 
     try {
-      const token = searchParams.get('token');
-      const { data } = await axios.post(`${API_URL}/api/auth/update-password`, {
-        token,
+      console.log('[ResetPassword] Enviando token_hash y type al endpoint:', token_hash, type);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/update-password`, {
+        token_hash,
+        type,
         password
       });
 
-      setSuccess(true);
+      setSuccess('Contraseña actualizada exitosamente');
       setTimeout(() => {
         navigate('/login');
-      }, 3000);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        setError(error.response.data.message || 'Error al restablecer la contraseña');
-      } else {
-        setError('Error al conectar con el servidor');
-      }
-    } finally {
-      setIsLoading(false);
+      }, 2000);
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Error al actualizar la contraseña');
+      console.log('[ResetPassword] Error al enviar token al endpoint:', error);
     }
   };
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      <video
-        autoPlay
-        loop
-        muted
-        className="absolute w-full h-full object-cover scale-105 blur-sm"
-        src={Video}
-      />
-
-      {/* Overlay para oscurecer ligeramente el video */}
-      <div className="absolute inset-0 bg-black/20"></div>
-
-      {/* Contenido */}
-      <div className="relative flex items-center justify-center min-h-screen p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/50 relative">
-            <IconButton
-              onClick={() => navigate('/login')}
-              sx={{
-                position: 'absolute',
-                left: 8,
-                top: 8,
-                color: '#1a1a1a',
-                '&:hover': {
-                  color: '#4ade80',
-                  transform: 'scale(1.1)',
-                },
-                transition: 'all 0.2s ease',
-              }}
-            >
-              ‹
-            </IconButton>
-
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 mb-4 text-center">
-              Restablecer Contraseña
-            </h1>
-            <p className="text-gray-700 text-center mb-10">
-              Ingresa tu nueva contraseña
-            </p>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                Contraseña actualizada exitosamente. Redirigiendo al login...
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-6">
-                <div className="space-y-2 mb-6">
-                  <input
-                    required
-                    type="password"
-                    placeholder="Nueva contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading || success}
-                    className="w-full bg-white/50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500
-                             focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
-                             transition-all duration-300 disabled:opacity-50"
-                  />
-                </div>
-
-                <div className="space-y-2 mb-6">
-                  <input
-                    required
-                    type="password"
-                    placeholder="Confirmar contraseña"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={isLoading || success}
-                    className="w-full bg-white/50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500
-                             focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
-                             transition-all duration-300 disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-center pt-4">
-                <button
-                  type="submit"
-                  disabled={isLoading || success}
-                  className={`px-8 py-3 rounded-lg font-semibold
-                           bg-gradient-to-r from-gray-900 to-gray-800 text-white
-                           shadow-lg shadow-gray-900/30
-                           hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300
-                           transform transition-all duration-300 hover:scale-[1.02]
-                           active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
-                           ${isLoading ? 'animate-pulse' : ''}`}
-                >
-                  {isLoading ? 'Actualizando...' : 'Actualizar Contraseña'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Typography component="h1" variant="h5">
+          Restablecer Contraseña
+        </Typography>
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {success}
+            </Alert>
+          )}
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="password"
+            label="Nueva Contraseña"
+            type="password"
+            id="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="confirmPassword"
+            label="Confirmar Contraseña"
+            type="password"
+            id="confirmPassword"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+          >
+            Actualizar Contraseña
+          </Button>
+        </Box>
+      </Box>
+    </Container>
   );
 };
 

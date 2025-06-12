@@ -10,6 +10,7 @@ const Register = () => {
   const [form, setForm] = useState({ username: "", password: "", email: "" });
   const [errors, setErrors] = useState<string[]>([]);
   const [success, setSuccess] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +33,7 @@ const Register = () => {
     
     if (newErrors.length === 0) {
       try {
-        //const response = await axios.post('http://localhost:3000/api/auth/register', {
+        // Paso 1: Crear usuario en Auth
         const response = await axios.post(`${API_URL}/api/auth/register`, {
           email: form.email,
           password: form.password,
@@ -40,6 +41,7 @@ const Register = () => {
         });
 
         if (response.status === 201) {
+          setUserId(response.data.userId);
           setSuccess(true);
         }
       } catch (error) {
@@ -53,6 +55,34 @@ const Register = () => {
         } else {
           setErrors(['Error al conectar con el servidor']);
         }
+      }
+    }
+  };
+
+  const handleVerificationSuccess = async () => {
+    if (!userId) {
+      setErrors(['Error: No se encontró el ID del usuario']);
+      return;
+    }
+
+    try {
+      // Paso 2: Completar el registro
+      const response = await axios.post(`${API_URL}/api/auth/complete-registration`, {
+        userId,
+        name: form.username,
+        email: form.email
+      });
+
+      if (response.status === 201) {
+        // Redirigir al login
+        navigate('/login');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorData = error.response.data;
+        setErrors([errorData.message || 'Error al completar el registro']);
+      } else {
+        setErrors(['Error al conectar con el servidor']);
       }
     }
   };
@@ -98,13 +128,24 @@ const Register = () => {
               Rellena la siguiente información
             </p>
 
-            {success && (
-              <div className="mt-8 text-green-700 text-center bg-green-100 py-2 rounded-lg">
-                ¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta.
+            {success ? (
+              <div className="space-y-4">
+                <div className="text-green-700 text-center bg-green-100 py-2 rounded-lg">
+                  ¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta.
+                </div>
+                <button
+                  onClick={handleVerificationSuccess}
+                  className="w-full px-8 py-3 rounded-lg font-semibold
+                           bg-gradient-to-r from-gray-900 to-gray-800 text-white
+                           shadow-lg shadow-gray-900/30
+                           hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300
+                           transform transition-all duration-300 hover:scale-[1.02]
+                           active:scale-[0.98]"
+                >
+                  Ya verifiqué mi correo
+                </button>
               </div>
-            )}
-
-            {!success && (
+            ) : (
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
                   <div className="space-y-2 mb-6">

@@ -388,6 +388,56 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
 
     console.log('Usuario creado en Auth con ID:', userId);
 
+    // Responder con éxito
+    res.status(201).json({
+      message: 'Usuario registrado exitosamente. Por favor, revisa tu correo para confirmar tu cuenta.',
+      success: true,
+      userId: userId
+    });
+
+  } catch (error: unknown) {
+    console.error('Error general en el registro:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    res.status(500).json({
+      message: 'Error al registrar el usuario',
+      error: errorMessage
+    });
+  }
+});
+
+// Ruta para completar el registro después de la verificación del email
+router.post('/complete-registration', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, name, email } = req.body;
+
+    if (!userId || !name || !email) {
+      res.status(400).json({
+        message: 'Faltan datos requeridos para completar el registro',
+        error: 'userId, name y email son requeridos'
+      });
+      return;
+    }
+
+    // Verificar que el usuario existe en Auth y está confirmado
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    
+    if (authError || !authUser) {
+      console.error('Error al verificar usuario en Auth:', authError);
+      res.status(404).json({
+        message: 'Usuario no encontrado en Auth',
+        error: authError?.message || 'Usuario no encontrado'
+      });
+      return;
+    }
+
+    if (!authUser.user.email_confirmed_at) {
+      res.status(400).json({
+        message: 'El email del usuario no ha sido confirmado',
+        error: 'Se requiere confirmación de email'
+      });
+      return;
+    }
+
     // Insertar en la tabla usuarios
     const userToInsert = {
       id: userId,
@@ -400,7 +450,7 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
     
     console.log('Intentando insertar usuario en tabla usuarios:', userToInsert);
     
-    const { error: insertError } = await supabase
+    const { error: insertError } = await supabaseAdmin
       .from('usuarios')
       .insert([userToInsert]);
 
@@ -411,14 +461,6 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
         details: insertError.details,
         hint: insertError.hint
       });
-      
-      // Si falla la inserción, eliminar el usuario de auth
-      try {
-        await supabase.auth.admin.deleteUser(userId);
-        console.log('Usuario eliminado de auth después del error de inserción');
-      } catch (deleteError) {
-        console.error('Error al eliminar usuario de auth:', deleteError);
-      }
       
       res.status(500).json({
         message: 'Error al guardar los datos adicionales del usuario',
@@ -431,17 +473,16 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
 
     console.log('Usuario insertado exitosamente en tabla usuarios');
 
-    // Responder con éxito
     res.status(201).json({
-      message: 'Usuario registrado exitosamente. Por favor, revisa tu correo para confirmar tu cuenta.',
+      message: 'Registro completado exitosamente',
       success: true
     });
 
   } catch (error: unknown) {
-    console.error('Error general en el registro:', error);
+    console.error('Error general al completar registro:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     res.status(500).json({
-      message: 'Error al registrar el usuario',
+      message: 'Error al completar el registro',
       error: errorMessage
     });
   }

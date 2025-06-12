@@ -3,6 +3,7 @@ import Video from "../../assets/Video.mp4";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import VerificationAlert from '../common/VerificationAlert';
+import PasswordResetModal from '../common/PasswordResetModal';
 import { IconButton } from '@mui/material';
 
 // Frontend para la login page
@@ -14,6 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [showVerification, setShowVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -133,7 +135,7 @@ const Login = () => {
                 </div>
               </div>
 
-              <div className="flex justify-center pt-4">
+              <div className="flex flex-col items-center space-y-4">
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -146,6 +148,14 @@ const Login = () => {
                            ${isLoading ? 'animate-pulse' : ''}`}
                 >
                   {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordReset(true)}
+                  className="text-gray-600 hover:text-emerald-600 transition-colors duration-300 text-sm"
+                >
+                  ¿Has olvidado tu contraseña?
                 </button>
               </div>
             </form>
@@ -160,6 +170,16 @@ const Login = () => {
           open={showVerification}
           onVerificationSuccess={handleVerificationSuccess}
           onClose={() => setShowVerification(false)}
+        />
+      )}
+
+      {/* PasswordResetModal como modal superpuesto */}
+      {form.email && (
+        <PasswordResetModal
+          email={form.email}
+          open={showPasswordReset}
+          onClose={() => setShowPasswordReset(false)}
+          onSuccess={() => setShowPasswordReset(false)}
         />
       )}
     </div>

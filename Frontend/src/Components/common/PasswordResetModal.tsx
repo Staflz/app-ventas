@@ -28,7 +28,6 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
       const response = await axios.post(`${API_URL}/api/auth/reset-password`, { email });
       if (response.status === 200) {
         setSuccess(true);
-        if (onSuccess) onSuccess();
       }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
@@ -41,10 +40,19 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
     }
   };
 
+  const handleClose = () => {
+    if (success && onSuccess) {
+      onSuccess();
+    }
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       aria-labelledby="password-reset-modal"
       disableEscapeKeyDown
       disableAutoFocus
@@ -69,7 +77,7 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         }}
       >
         <IconButton
-          onClick={onClose}
+          onClick={handleClose}
           sx={{
             position: 'absolute',
             right: 8,
@@ -95,8 +103,17 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         </Box>
 
         {success ? (
-          <Box sx={{ textAlign: 'center', mb: 3, color: '#059669' }}>
-            ¡Enlace enviado! Por favor, revisa tu correo electrónico.
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <Box sx={{ 
+              color: '#059669',
+              bgcolor: '#ecfdf5',
+              p: 2,
+              borderRadius: '0.5rem',
+              border: '1px solid #10b981',
+              mb: 3
+            }}>
+              ¡Enlace enviado! Por favor, revisa tu correo electrónico.
+            </Box>
           </Box>
         ) : (
           <>
