@@ -373,7 +373,12 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
     // Crear usuario en Supabase Auth
     const { data: userData, error: signUpError } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        data: {
+          display_name: name
+        }
+      }
     });
 
     const userId = userData.user?.id;
@@ -515,50 +520,9 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
     console.log('Autenticación exitosa, ID del usuario:', data.user.id);
 
-    // Obtener información adicional del usuario desde la tabla usuarios usando el cliente admin
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('usuarios')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-
-    if (userError) {
-      console.error('Error al obtener información del usuario:', {
-        code: userError.code,
-        message: userError.message,
-        details: userError.details,
-        hint: userError.hint,
-        userId: data.user.id
-      });
-      res.status(500).json({
-        message: 'Error al obtener información del usuario',
-        error: userError.message,
-        details: userError.details
-      });
-      return;
-    }
-
-    if (!userData) {
-      console.error('Usuario no encontrado en la tabla usuarios:', data.user.id);
-      res.status(404).json({
-        message: 'Usuario no encontrado en la base de datos',
-        error: 'El usuario existe en auth pero no en la tabla usuarios'
-      });
-      return;
-    }
-
-    console.log('Información del usuario obtenida exitosamente:', {
-      id: userData.id,
-      email: userData.email,
-      nombre: userData.nombre
-    });
-
     res.status(200).json({
       message: 'Login exitoso',
-      user: {
-        ...data.user,
-        ...userData
-      },
+      user: data.user,
       session: data.session
     });
 

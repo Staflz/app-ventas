@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Button, TextField, Typography, Box, Container, Alert } from '@mui/material';
+import { Button, TextField, Box, Alert, IconButton } from '@mui/material';
+import Fondo from "../../assets/fondo.jpg";
 
 const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState('');
@@ -20,21 +21,45 @@ const ResetPassword: React.FC = () => {
   if (!token_hash || !type) {
     console.log('[ResetPassword] No se encontró token_hash o type, renderizando error');
     return (
-      <Container maxWidth="sm">
-        <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Alert severity="error">
-            Enlace inválido o expirado. Por favor, solicita un nuevo enlace de reseteo.
-          </Alert>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate('/login')}
-            sx={{ mt: 2 }}
-          >
-            Volver al login
-          </Button>
-        </Box>
-      </Container>
+      <div className="absolute inset-0 overflow-hidden">
+        <img
+          src={Fondo}
+          alt="Fondo"
+          className="absolute w-full h-full object-cover scale-105 blur-sm"
+        />
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative flex items-center justify-center min-h-screen p-4">
+          <div className="w-full max-w-md">
+            <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/50">
+              <Alert severity="error" sx={{ mb: 2 }}>
+                Enlace inválido o expirado. Por favor, solicita un nuevo enlace de reseteo.
+              </Alert>
+              <Button
+                onClick={() => navigate('/login')}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  background: 'linear-gradient(to right, #1a1a1a, #4a4a4a)',
+                  color: 'white',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  '&:hover': {
+                    background: 'linear-gradient(to right, #2a2a2a, #5a5a5a)',
+                    color: '#4ade80',
+                    transform: 'scale(1.02)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                Volver al login
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -73,57 +98,127 @@ const ResetPassword: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography component="h1" variant="h5">
-          Restablecer Contraseña
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {success}
-            </Alert>
-          )}
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Nueva Contraseña"
-            type="password"
-            id="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="confirmPassword"
-            label="Confirmar Contraseña"
-            type="password"
-            id="confirmPassword"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Actualizar Contraseña
-          </Button>
-        </Box>
-      </Box>
-    </Container>
+    <div className="absolute inset-0 overflow-hidden">
+      <img
+        src={Fondo}
+        alt="Fondo"
+        className="absolute w-full h-full object-cover scale-105 blur-sm"
+      />
+      <div className="absolute inset-0 bg-black/20"></div>
+      <div className="relative flex items-center justify-center min-h-screen p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/50">
+            <IconButton
+              onClick={() => navigate('/login')}
+              sx={{
+                position: 'absolute',
+                left: 8,
+                top: 8,
+                color: '#1a1a1a',
+                '&:hover': {
+                  color: '#4ade80',
+                  transform: 'scale(1.1)',
+                },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              ‹
+            </IconButton>
+
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 mb-4 text-center">
+              Restablecer Contraseña
+            </h1>
+            <p className="text-gray-700 text-center mb-6">
+              Ingresa tu nueva contraseña
+            </p>
+
+            <Box component="form" onSubmit={handleSubmit}>
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+              )}
+              {success && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  {success}
+                </Alert>
+              )}
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Nueva Contraseña"
+                type="password"
+                id="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255, 255, 255, 0.5)',
+                    '&:hover fieldset': {
+                      borderColor: '#1a1a1a',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#1a1a1a',
+                    },
+                  },
+                }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="confirmPassword"
+                label="Confirmar Contraseña"
+                type="password"
+                id="confirmPassword"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255, 255, 255, 0.5)',
+                    '&:hover fieldset': {
+                      borderColor: '#1a1a1a',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#1a1a1a',
+                    },
+                  },
+                }}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                sx={{
+                  mt: 3,
+                  mb: 2,
+                  px: 4,
+                  py: 1.5,
+                  background: 'linear-gradient(to right, #1a1a1a, #4a4a4a)',
+                  color: 'white',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  '&:hover': {
+                    background: 'linear-gradient(to right, #2a2a2a, #5a5a5a)',
+                    color: '#4ade80',
+                    transform: 'scale(1.02)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                Actualizar Contraseña
+              </Button>
+            </Box>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

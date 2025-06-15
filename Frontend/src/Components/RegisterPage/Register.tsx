@@ -131,7 +131,7 @@ const Register = () => {
             {success ? (
               <div className="space-y-4">
                 <div className="text-green-700 text-center bg-green-100 py-2 rounded-lg">
-                  ¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta.
+                  ¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta. No cierres esta página hasta que no lo hayas hecho.
                 </div>
                 <button
                   onClick={handleVerificationSuccess}

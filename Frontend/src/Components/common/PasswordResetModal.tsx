@@ -3,14 +3,12 @@ import { Modal, Paper, Box, TextField, Button, IconButton } from '@mui/material'
 import axios from 'axios';
 
 interface PasswordResetModalProps {
-  email: string;
   onClose?: () => void;
   onSuccess?: () => void;
   open: boolean;
 }
 
 const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
-  email,
   onClose,
   onSuccess,
   open
@@ -18,10 +16,16 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState('');
 
   const API_URL = import.meta.env.VITE_API_URL;
 
   const handlePasswordReset = async () => {
+    if (!email) {
+      setError('Por favor, ingresa tu correo electrónico');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -47,6 +51,10 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
     if (onClose) {
       onClose();
     }
+    // Resetear el estado del modal
+    setEmail('');
+    setError(null);
+    setSuccess(false);
   };
 
   return (
@@ -136,10 +144,9 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                 label="Correo electrónico"
                 variant="outlined"
                 value={email}
-                disabled
-                InputProps={{
-                  readOnly: true
-                }}
+                onChange={(e) => setEmail(e.target.value)}
+                error={!!error && !email}
+                helperText={error && !email ? 'El correo es requerido' : ''}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'rgba(255, 255, 255, 0.5)',

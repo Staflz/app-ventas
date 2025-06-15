@@ -174,14 +174,11 @@ const Login = () => {
       )}
 
       {/* PasswordResetModal como modal superpuesto */}
-      {form.email && (
-        <PasswordResetModal
-          email={form.email}
-          open={showPasswordReset}
-          onClose={() => setShowPasswordReset(false)}
-          onSuccess={() => setShowPasswordReset(false)}
-        />
-      )}
+      <PasswordResetModal
+        open={showPasswordReset}
+        onClose={() => setShowPasswordReset(false)}
+        onSuccess={() => setShowPasswordReset(false)}
+      />
     </div>
   );
 };
