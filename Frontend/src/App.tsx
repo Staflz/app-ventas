@@ -4,29 +4,39 @@ import HomePage from "./Components/HomePage/HomePage";
 import Register from "./Components/RegisterPage/Register";
 import Dashboard from "./Components/Dashboard/Dashboard";
 import ResetPassword from "./Components/ResetPasswordPage/ResetPassword";
+import NotFound from "./Components/common/NotFound";
+import ProtectedRoute from "./Components/common/ProtectedRoute";
 
 function App() {
 
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <div><HomePage/></div>
+      element: <HomePage />
     },
     {
       path: "/login",
-      element: <div><Login/></div>
+      element: <Login />
     },
     {
       path: "/register",
-      element: <div><Register/></div>
+      element: <Register />
     },
     {
       path: "/dashboard",
-      element: <div><Dashboard/></div>
+      element: (
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      )
     },
     {
       path: "/reset-password",
-      element: <div><ResetPassword/></div>
+      element: <ResetPassword />
+    },
+    {
+      path: "*",
+      element: <NotFound />
     }
   ])
 

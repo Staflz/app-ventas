@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Logo from "../../assets/Logo.png";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 interface Venta {
     id: string;
@@ -21,6 +22,7 @@ interface Transaccion {
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     // Estado para el formulario de nueva venta
     const [nuevaVenta, setNuevaVenta] = useState({
         producto: "",
@@ -135,6 +137,11 @@ const Dashboard = () => {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        navigate('/login');
+    };
+
     return (
         //div principal
         <div className="w-screen h-screen bg-blue-50 flex ">
@@ -176,9 +183,22 @@ const Dashboard = () => {
                                 <span className="text-emerald-500 text-4xl font-bold">0$</span>
                             </div>
 
-                            {/* Logo */}
-                            <div className="w-20 h-20 rounded-full overflow-hidden shadow-md">
-                                <img src={Logo} alt="Logo" className="object-cover w-full h-full" />
+                            {/* Logo y Botón de Cerrar Sesión */}
+                            <div className="flex flex-col items-center space-y-4">
+                                <div className="w-20 h-20 rounded-full overflow-hidden shadow-md">
+                                    <img src={Logo} alt="Logo" className="object-cover w-full h-full" />
+                                </div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="px-4 py-2 rounded-lg font-semibold
+                                             bg-gradient-to-r from-red-500 to-red-600 text-white
+                                             shadow-lg shadow-red-500/30
+                                             hover:from-red-600 hover:to-red-700
+                                             transform transition-all duration-300 hover:scale-[1.02]
+                                             active:scale-[0.98]"
+                                >
+                                    Cerrar Sesión
+                                </button>
                             </div>
                         </div>
                     </div>
