@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import Logo from "../../assets/Logo.png";
+import Fondo2 from "../../assets/Fondo2.jpg";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import React from "react";
 
 interface Venta {
     id: string;
@@ -20,6 +22,14 @@ interface Transaccion {
 }
 
 const API_URL = import.meta.env.VITE_API_URL;
+
+const TABS = [
+  { label: "Ventas", value: "ventas" },
+  { label: "Transacciones", value: "transacciones" },
+  { label: "Transferencias", value: "transferencias" },
+  { label: "Billeteras", value: "billeteras" },
+  { label: "Inventario", value: "inventario" },
+];
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -52,6 +62,10 @@ const Dashboard = () => {
             fecha: "dd/mm/yy"
         },
     ]);
+
+    const [activeTab, setActiveTab] = useState("ventas");
+    // Elimino paginación, solo muestro las primeras 10 ventas
+    const ventasToShow = ventas.slice(0, 10);
 
     // Función para cargar las ventas
     const cargarVentas = async () => {
@@ -93,13 +107,6 @@ const Dashboard = () => {
         });
     };
 
-    // Función para cancelar la edición
-    //const handleCancelarEdicion = () => {
-      //  setVentaEditando(null);
-      //  setNuevaVenta({ producto: "", cantidad: "", fecha: "", hora: "" });
-    //};
-
-    // Función para guardar una venta (crear o editar)
     const handleGuardarVenta = async () => {
         try {
             const ventaData = {
@@ -143,229 +150,243 @@ const Dashboard = () => {
     };
 
     return (
-        //div principal
-        <div className="w-screen h-screen bg-blue-50 flex ">
-            <div className="w-screen h-screen p-4 bg-blue-50 flex flex-col">
-                {/* Parte superior: 3 secciones */}
-                <div className="grid grid-cols-3 h-90">
-                    {/*seccion BILLETERAS*/}
-                    <div className="bg-blue-50">
-                        <div className="flex flex-col items-center space-y-6 bg-blue-50 p-4 rounded-md">
-                            {/* Última venta */}
-                            <div className="w-50 h-18 border border-emerald-300 rounded-md flex flex-col items-center justify-center shadow-sm bg-white">
-                                <span className="text-sm text-gray-700 font-semibold text-11">Última venta</span>
-                                <span className="text-emerald-500 text-3xl font-bold">0$</span>
-                            </div>
+        <div className="min-h-screen w-full relative">
+            {/* Fondo con imagen y efecto de oscurecimiento */}
+            <div className="absolute inset-0 z-0">
+                <img
+                    src={Fondo2}
+                    alt="Fondo"
+                    className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+            </div>
 
-                            {/* Billeteras */}
-                            <div className="flex flex-col items-center space-y-4">
-                                <div className="text-center">
-                                    <p className="text-lg text-black font-semibold">Billetera 1</p>
-                                    <p className="text-emerald-500 font-medium text-10">0$</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-lg text-black font-semibold">Billetera 2</p>
-                                    <p className="text-emerald-500 font-medium text-10">0$</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-lg  text-black font-semibold">Billetera 3</p>
-                                    <p className="text-emerald-500 font-medium text-10">0$</p>
-                                </div>
+            {/* Contenido del dashboard */}
+            <div className="relative z-10 w-full p-9">
+                {/* Paneles superiores alineados y sin fondo blanco */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-2 ">
+                    {/* Izquierda: Última venta y billeteras */}
+                    <div className="flex flex-col items-center w-[232px] mx-25">
+                        <div className=" bg-white w-[203px] h-[66px] border border-emerald-300 rounded-lg p-2 flex flex-col items-center justify-center shadow-sm bg-blue-50 mb-5">
+                            <span className="text-2xl text-gray-700 font-semibold">Billeteras</span>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="w-[232px] h-[60px] text-center p-2 bg-blue-50 rounded-lg bg-white">
+                                <p className="text-base text-black font-semibold">Billetera 1</p>
+                                <p className="text-emerald-500 font-medium">0$</p>
+                            </div>
+                            <div className="w-[232px] h-[60px] text-center p-2 bg-blue-50 rounded-lg bg-white">
+                                <p className="text-base text-black font-semibold">Billetera 2</p>
+                                <p className="text-emerald-500 font-medium">0$</p>
+                            </div>
+                            <div className="w-[232px] h-[60px] text-center p-2 bg-blue-50 rounded-lg bg-white">
+                                <p className="text-base text-black font-semibold">Billetera 3</p>
+                                <p className="text-emerald-500 font-medium">0$</p>
                             </div>
                         </div>
+                        {/* Botón de cerrar sesión pequeño y debajo de las tablas */}
+                        <div className="flex justify-center mt-9">
+                            <button
+                                onClick={handleLogout}
+                                className="px-4 py-1 rounded-lg font-semibold bg-black text-red-500 shadow-lg shadow-red-500/30 hover:from-red-600 hover:to-red-700 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                                >
+                                Cerrar Sesión
+                            </button>
+                        </div>
                     </div>
-                    {/*seccion BALANCE*/}
-                    <div className="bg-blue-50">
-                        <div className="flex flex-col items-center bg-blue-50 p-6 rounded-md space-y-6">
-                            {/* Balance Total */}
-                            <div className="w-70 h-20 bg-white border border-emerald-300 rounded-md flex flex-col justify-center items-center shadow-sm">
-                                <span className="text-sm font-semibold text-gray-700 text-15">Balance Total</span>
-                                <span className="text-emerald-500 text-4xl font-bold">0$</span>
-                            </div>
-
-                            {/* Logo y Botón de Cerrar Sesión */}
-                            <div className="flex flex-col items-center space-y-4">
-                                <div className="w-20 h-20 rounded-full overflow-hidden shadow-md">
-                                    <img src={Logo} alt="Logo" className="object-cover w-full h-full" />
-                                </div>
+                    {/* Centro: Balance Total */}
+                    <div className="flex flex-col items-center w-[405px] h-[346px]">
+                        <div className="w-[405px] h-[144px] border border-emerald-300 rounded-lg p-2 flex flex-col justify-center items-center shadow-sm bg-white mb-2">
+                            <span className=" mb-5 text-2xl font-bold text-gray-700">Balance Total</span>
+                            <span className="text-emerald-500 text-4xl font-bold">0$</span>
+                        </div>
+                        {/* Logo más grande */}
+                        <div className="w-24 h-24 rounded-full overflow-hidden shadow-md mt-9">
+                            <img src={Logo} alt="Logo" className="object-cover w-full h-full" />
+                        </div>
+                         {/* Panel de navegación central más pequeño y debajo del logo */}
+                        <div className="items-end flex justify-center mt-9">
+                            <div className="flex bg-white rounded-lg shadow-md overflow-hidden scale-90">
+                                {TABS.map(tab => (
                                 <button
-                                    onClick={handleLogout}
-                                    className="px-4 py-2 rounded-lg font-semibold
-                                             bg-gradient-to-r from-red-500 to-red-600 text-white
-                                             shadow-lg shadow-red-500/30
-                                             hover:from-red-600 hover:to-red-700
-                                             transform transition-all duration-300 hover:scale-[1.02]
-                                             active:scale-[0.98]"
+                                    key={tab.value}
+                                    onClick={() => setActiveTab(tab.value)}
+                                    className={`px-4 py-1 font-semibold transition-colors duration-200 text-sm ${
+                                        activeTab === tab.value
+                                            ? 'bg-black text-white'
+                                            : 'bg-white text-black hover:bg-gray-100'
+                                        }`}
                                 >
-                                    Cerrar Sesión
-                                </button>
+                                    {tab.label}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
-                    <div className="bg-cyan-50">
-                        <div className="bg-blue-50 p-6 rounded-md flex flex-col items-center space-y-4">
-                            {/* Título */}
-                            <div className="w-40 h-12 bg-white border border-emerald-300 rounded-md flex justify-center items-center shadow-sm">
-                                <span className="font-semibold text-black">
-                                    {ventaEditando ? 'Editar venta' : 'Nueva venta'}
-                                </span>
-                            </div>
-
-                            {/* Inputs */}
-                            <input
-                                type="text"
-                                name="producto"
-                                placeholder="ID/Nombre"
-                                value={nuevaVenta.producto}
-                                onChange={handleChange}
-                                readOnly={ventaEditando !== null}
-                                className={`bg-white w-70 h-8 px-2 border border-gray-200 rounded-md text-sm ${
-                                    ventaEditando !== null ? 'text-gray-400 bg-gray-100' : 'text-gray-500'
-                                }`}
-                            />
-                            <input
-                                type="number"
-                                name="cantidad"
-                                placeholder="Cantidad"
-                                value={nuevaVenta.cantidad}
-                                onChange={handleChange}
-                                className="bg-white w-70 h-8 px-2 border border-gray-200 rounded-md text-sm text-gray-500"
-                            />
-                            <input
-                                type="date"
-                                name="fecha"
-                                value={nuevaVenta.fecha}
-                                onChange={handleChange}
-                                className="bg-white w-70 h-8 px-2 border border-gray-200 rounded-md text-sm text-gray-500"
-                            />
-                            <input
-                                type="time"
-                                name="hora"
-                                value={nuevaVenta.hora}
-                                onChange={handleChange}
-                                className="bg-white w-70 h-8 px-2 border border-gray-200 rounded-md text-sm text-gray-500"
-                            />
-
-                            {/* Botones */}
-                            <div className="flex space-x-4">
-                                <button 
-                                    onClick={handleGuardarVenta}
-                                    className="bg-gradient-to-b from-black to-black text-emerald-400 px-1 py-1 rounded-md font-semibold shadow-md hover:from-gray-800 hover:to-gray-800"
+                    {/* Derecha: Nueva venta */}
+                    <div className="flex flex-col items-center w-[232px] h-[346px] mx-25">
+                        <div className="bg-white w-[203px] h-[66px] border border-emerald-300 rounded-lg p-2 flex justify-center items-center shadow-sm bg-blue-50 mb-5">
+                            <span className="font-semibold text-black text-base">
+                                {ventaEditando ? 'Editar venta' : 'Nueva venta'}
+                            </span>
+                        </div>
+                        <input
+                            type="text"
+                            name="producto"
+                            placeholder="ID/Nombre"
+                            value={nuevaVenta.producto}
+                            onChange={handleChange}
+                            readOnly={ventaEditando !== null}
+                            className={` bg-white w-[232px] h-10 px-2 border border-gray-200 rounded-lg text-sm ${
+                                ventaEditando !== null ? 'text-gray-400 bg-gray-100' : 'text-gray-500'
+                            } mb-4`}
+                        />
+                        <input
+                            type="number"
+                            name="cantidad"
+                            placeholder="Cantidad"
+                            value={nuevaVenta.cantidad}
+                            onChange={handleChange}
+                            className="bg-white w-[232px] h-10 px-2 border border-gray-200 rounded-lg text-sm text-gray-500 mb-4"
+                        />
+                        <input
+                            type="date"
+                            name="fecha"
+                            value={nuevaVenta.fecha}
+                            onChange={handleChange}
+                            className="bg-white w-[232px] h-10 px-2 border border-gray-200 rounded-lg text-sm text-gray-500 mb-4"
+                        />
+                        <input
+                            type="time"
+                            name="hora"
+                            value={nuevaVenta.hora}
+                            onChange={handleChange}
+                            className="bg-white w-[232px] h-10 px-2 border border-gray-200 rounded-lg text-sm text-gray-500 mb-9"
+                        />
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={handleGuardarVenta}
+                                className="px-3 py-1 rounded-lg font-semibold text-green-500 bg-black  shadow-lg shadow-emerald-500/30 hover:from-emerald-600 hover:to-emerald-700 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                            >
+                                {ventaEditando ? 'Actualizar' : 'Guardar'}
+                            </button>
+                            {ventaEditando && (
+                                <button
+                                    onClick={() => {
+                                        setVentaEditando(null);
+                                        setNuevaVenta({ producto: "", cantidad: "", fecha: "", hora: "" });
+                                    }}
+                                    className="px-3 py-1 rounded-lg font-semibold bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-lg shadow-gray-500/30 hover:from-gray-600 hover:to-gray-700 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-sm"
                                 >
-                                    {ventaEditando ? 'Guardar' : 'Hecho'}
+                                    Cancelar
                                 </button>
-                                {ventaEditando && (
-                                    <button 
-                                        onClick={() => handleEliminarVenta(ventaEditando)}
-                                        className="bg-gradient-to-b from-red-300 to-red-300 border-red-500 text-black px-4 py-1 rounded-md font-semibold shadow-md hover:from-red-200 hover:to-red-200"
-                                    >
-                                        Eliminar
-                                    </button>
-                                )}
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
-
-                {/* Parte inferior: 2 secciones */}
-                <div className="grid grid-cols-2 h-90">
-                    {/*tabla VENTAS*/}
-                    <div className="bg-white border border-emerald-300 rounded-lg p-4 max-w-2xl mx-auto">
-                        <h2 className="text-emerald-500 font-semibold mb-4">Ventas</h2>
-
+                {/* Parte inferior: tablas siempre visibles */}
+                <div className="grid grid-cols-1 md:grid-cols-2 mt-9">
+                    {/* Tabla de ventas */}
+                    <div className="bg-white rounded-lg shadow-md p-4 flex flex-col mr-9">
+                        <h2 className="text-xl font-semibold mb-4">Historial de Ventas</h2>
+                        {/* ALERTA DE ERROR */}
                         {error && (
                             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
                                 {error}
                             </div>
                         )}
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-gray-500 border-b">
-                                    <tr>
-                                        <th className="px-4 py-2 text-black">Producto</th>
-                                        <th className="px-4 py-2 text-black">Cantidad</th>
-                                        <th className="px-4 py-2 text-emerald-500">Total</th>
-                                        <th className="px-4 py-2 text-black">Fecha</th>
-                                        <th className="px-4 py-2 text-black">Hora</th>
-                                        <th className="px-4 py-2 text-black">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {loading ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-4 py-2 text-center">Cargando...</td>
-                                        </tr>
-                                    ) : ventas.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-4 py-2 text-center">No hay ventas registradas</td>
-                                        </tr>
-                                    ) : (
-                                        ventas.map((venta) => (
-                                            <tr key={venta.id} className="border-b hover:bg-gray-50">
-                                                <td className="px-4 py-1 font-semibold text-gray-900">{venta.producto}</td>
-                                                <td className="px-4 py-1 text-gray-900">{venta.cantidad}</td>
-                                                <td className="px-4 py-1 text-emerald-500">${venta.total}</td>
-                                                <td className="px-4 py-1 text-gray-900">{venta.fecha}</td>
-                                                <td className="px-4 py-1 text-gray-900">{venta.hora}</td>
-                                                <td className="px-4 py-1">
-                                                    <button
-                                                        onClick={() => handleIniciarEdicion(venta)}
-                                                        className="text-emerald-500 hover:text-emerald-700"
-                                                    >
-                                                        Editar
-                                                    </button>
-                                                </td>
+                        {/* TABLA DE VENTAS */}
+                        {loading ? (
+                            <p>Cargando ventas...</p>
+                        ) : (
+                            <>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="flex justify-center mt-4">
-                            <button className="bg-gradient-to-b from-black to-black text-white rounded-lg px-4 py-2 text-lg hover:from-gray-800 hover:to-gray-800">
-                                ...
-                            </button>
-                        </div>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {ventasToShow.map((venta) => (
+                                                <tr key={venta.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{venta.producto}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{venta.cantidad}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{venta.total}$</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{venta.fecha}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{venta.hora}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        <button
+                                                            onClick={() => handleIniciarEdicion(venta)}
+                                                            className="text-emerald-600 hover:text-emerald-900 mr-3"
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEliminarVenta(venta.id)}
+                                                            className="text-red-600 hover:text-red-900"
+                                                        >
+                                                            Eliminar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {/* Botón de filtro */}
+                                <div className="flex justify-center mt-4">
+                                    <button className="bg-gradient-to-b from-black to-black text-white rounded-lg px-4 py-1 text-lg hover:from-gray-800 hover:to-gray-800">...</button>
+                                </div>
+                            </>
+                        )}
                     </div>
-                    {/*tabla TRANSACCIONES*/}
-                    <div className="bg-white border border-emerald-300 rounded-lg p-4 max-w-2xl mx-auto">
-                        <h2 className="text-black font-semibold mb-4">Transacciones</h2>
 
+                    {/* Tabla de transacciones */}
+                    <div className="bg-white rounded-lg shadow-md p-4 flex flex-col">
+                        <h2 className="text-xl font-semibold mb-4">Transacciones</h2>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-gray-500 border-b">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-2 text-black">Razon</th>
-                                        <th className="px-4 py-2 text-black">Monto</th>
-                                        <th className="px-4 py-2 text-emerald-500">Tipo</th>
-                                        <th className="px-4 py-2 text-black">Fecha</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Razón</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {transacciones.map((transaccion: Transaccion, index: number) => (
-                                        <tr key={index} className="border-b hover:bg-gray-50">
-                                            <td className="px-4 py-1 font-semibold text-gray-900">{transaccion.razon}</td>
-                                            <td className="px-4 py-1 text-gray-900">{transaccion.monto}</td>
-                                            <td className="px-4 py-1 text-gray-900">{transaccion.tipo}</td>
-                                            <td className="px-4 py-1 text-gray-900">{transaccion.fecha}</td>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {transacciones.map((transaccion, index) => (
+                                        <tr key={index}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaccion.razon}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaccion.monto}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    transaccion.tipo === 'Ingreso' 
+                                                        ? 'bg-emerald-100 text-emerald-800' 
+                                                        : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                    {transaccion.tipo}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaccion.fecha}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-
+                        {/* Botón de filtro */}
                         <div className="flex justify-center mt-4">
-                            <button className="bg-gradient-to-b from-black to-black text-white rounded-lg px-4 py-2 text-lg hover:from-gray-800 hover:to-gray-800">
-                                ...
-                            </button>
+                            <button className="bg-gradient-to-b from-black to-black text-white rounded-lg px-4 py-1 text-lg hover:from-gray-800 hover:to-gray-800">...</button>
                         </div>
                     </div>
-                </div>
-
+                </div>            
             </div>
-
         </div>
     );
 }
