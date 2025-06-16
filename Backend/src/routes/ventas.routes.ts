@@ -19,7 +19,7 @@ const supabaseAdmin = createClient(
 
 // Middleware de validación para crear venta
 const createVentaValidation = [
-  body('producto').notEmpty().withMessage('El producto es requerido'),
+  body('producto_alias').notEmpty().withMessage('El producto es requerido'),
   body('cantidad').isInt({ min: 1 }).withMessage('La cantidad debe ser un número positivo'),
   body('fecha').isDate().withMessage('La fecha debe ser válida'),
   body('hora').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/).withMessage('La hora debe ser válida (HH:MM o HH:MM:SS)'),
@@ -30,7 +30,12 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const { data: ventas, error } = await supabaseAdmin
       .from('ventas')
-      .select('*')
+      .select(`
+        *,
+        inventarios:producto_id (
+          nombre_producto
+        )
+      `)
       .order('fecha', { ascending: false });
 
     if (error) {
@@ -39,7 +44,13 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    res.status(200).json(ventas);
+    // Transformar los datos para incluir el nombre_producto directamente
+    const ventasFormateadas = ventas.map(venta => ({
+      ...venta,
+      nombre_producto: venta.inventarios?.nombre_producto || 'Producto no encontrado'
+    }));
+
+    res.status(200).json(ventasFormateadas);
   } catch (error: unknown) {
     console.error('Error general al obtener ventas:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -52,20 +63,63 @@ router.post('/', createVentaValidation, async (req: Request, res: Response): Pro
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      console.error('Errores de validación:', errors.array());
+      res.status(400).json({ 
+        message: 'Error de validación',
+        errors: errors.array() 
+      });
       return;
     }
 
-    const { producto, cantidad, fecha, hora } = req.body;
+    console.log('Datos recibidos:', req.body);
+    const { producto_alias, cantidad, fecha, hora, email } = req.body;
 
-    // Calcular el total (aquí podrías agregar la lógica para obtener el precio del producto)
-    const total = cantidad * 100; // Por ahora usamos un precio fijo de 100
+    // Validar que todos los campos requeridos estén presentes
+    if (!producto_alias || !cantidad || !fecha || !hora || !email) {
+      console.error('Faltan campos requeridos:', { producto_alias, cantidad, fecha, hora, email });
+      res.status(400).json({ 
+        message: 'Faltan campos requeridos',
+        received: { producto_alias, cantidad, fecha, hora, email }
+      });
+      return;
+    }
+
+    // Buscar el usuario por email
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('usuarios')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (userError || !userData) {
+      console.error('Error al buscar usuario:', userError);
+      res.status(404).json({ message: 'Usuario no encontrado' });
+      return;
+    }
+
+    // Buscar el producto en el inventario por su alias
+    const { data: productoData, error: productoError } = await supabaseAdmin
+      .from('inventarios')
+      .select('id, precio_unitario')
+      .eq('alias', producto_alias)
+      .single();
+
+    if (productoError || !productoData) {
+      console.error('Error al buscar producto:', productoError);
+      res.status(404).json({ message: 'Producto no encontrado' });
+      return;
+    }
+
+    // Calcular el total usando el precio unitario del producto
+    const total = cantidad * productoData.precio_unitario;
 
     const { data: venta, error } = await supabaseAdmin
       .from('ventas')
       .insert([
         {
-          producto,
+          usuario_id: userData.id,
+          producto_id: productoData.id,
+          producto_alias: producto_alias,
           cantidad,
           total,
           fecha,
@@ -146,10 +200,10 @@ router.put('/:id', createVentaValidation, async (req: Request, res: Response): P
     }
 
     const { id } = req.params;
-    const { producto, cantidad, fecha, hora } = req.body;
+    const { producto_alias, cantidad, fecha, hora } = req.body;
 
     console.log('Intentando actualizar venta con ID:', id);
-    console.log('Datos recibidos:', { producto, cantidad, fecha, hora });
+    console.log('Datos recibidos:', { producto_alias, cantidad, fecha, hora });
 
     // Verificar si la venta existe
     const { data: ventaExistente, error: checkError } = await supabaseAdmin
@@ -174,16 +228,28 @@ router.put('/:id', createVentaValidation, async (req: Request, res: Response): P
       return;
     }
 
-    console.log('Venta encontrada:', ventaExistente);
+    // Buscar el producto en el inventario por su alias
+    const { data: productoData, error: productoError } = await supabaseAdmin
+      .from('inventarios')
+      .select('id, precio_unitario')
+      .eq('alias', producto_alias)
+      .single();
 
-    // Calcular el total
-    const total = parseInt(cantidad) * 100; // Por ahora usamos un precio fijo de 100
+    if (productoError || !productoData) {
+      console.error('Error al buscar producto:', productoError);
+      res.status(404).json({ message: 'Producto no encontrado' });
+      return;
+    }
+
+    // Calcular el total usando el precio unitario del producto
+    const total = cantidad * productoData.precio_unitario;
 
     // Actualizar la venta
     const { data: venta, error: updateError } = await supabaseAdmin
       .from('ventas')
       .update({
-        producto,
+        producto_id: productoData.id,
+        producto_alias: producto_alias,
         cantidad: parseInt(cantidad),
         total,
         fecha,
