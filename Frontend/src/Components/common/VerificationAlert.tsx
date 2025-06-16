@@ -1,6 +1,6 @@
 //, useEffect//
 import React, { useState} from 'react';
-import { Alert, AlertTitle, Box, TextField, Button, CircularProgress } from '@mui/material';
+import { Modal, Paper, Box, TextField, Button, IconButton } from '@mui/material';
 import axios from 'axios';
 
 
@@ -8,12 +8,14 @@ interface VerificationAlertProps {
   email: string;
   onClose?: () => void;
   onVerificationSuccess?: () => void;
+  open: boolean;
 }
 
 const VerificationAlert: React.FC<VerificationAlertProps> = ({ 
   email, 
   onClose,
-  onVerificationSuccess 
+  onVerificationSuccess,
+  open
 }) => {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +32,6 @@ const VerificationAlert: React.FC<VerificationAlertProps> = ({
     setRequestError(null);
     setCodeSent(false);
     try {
-      //const response = await axios.post('http://localhost:3000/api/auth/request-verification-code', { email });
       const response = await axios.post(`${API_URL}/api/auth/request-verification-code`, { email });
       if (response.status === 200) {
         setCodeSent(true);
@@ -55,7 +56,6 @@ const VerificationAlert: React.FC<VerificationAlertProps> = ({
     setError(null);
     try {
       console.log('Intentando verificar código...');
-      //const response = await axios.post('http://localhost:3000/api/auth/verify-code', {
       const response = await axios.post(`${API_URL}/api/auth/verify-code`, {
         email,
         code
@@ -77,24 +77,79 @@ const VerificationAlert: React.FC<VerificationAlertProps> = ({
   };
 
   return (
-    <Box sx={{ width: '100%', mb: 2 }}>
-      <Alert severity="info" onClose={onClose}>
-        <AlertTitle>Verificación de Código</AlertTitle>
-        <div>Para continuar, solicita un código de verificación y luego ingrésalo aquí.</div>
-        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-          <Button
-            variant="contained"
-            onClick={requestVerificationCode}
-            disabled={requestingCode}
-          >
-            {requestingCode ? <CircularProgress size={20} color="inherit" /> : 'Solicitar Código'}
-          </Button>
-          {codeSent && <span style={{ color: 'green' }}>¡Código enviado!</span>}
-        </div>
-        {requestError && (
-          <Box sx={{ mt: 2, color: 'red', textAlign: 'center' }}>{requestError}</Box>
+    <Modal
+      open={open}
+      onClose={onClose}
+      aria-labelledby="verification-modal"
+      disableEscapeKeyDown
+      disableAutoFocus
+      disableEnforceFocus
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Paper
+        elevation={3}
+        sx={{
+          position: 'relative',
+          width: '90%',
+          maxWidth: '500px',
+          p: 4,
+          borderRadius: '1rem',
+          bgcolor: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.5)',
+        }}
+      >
+        <IconButton
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: '#1a1a1a',
+            '&:hover': {
+              color: '#4ade80',
+              transform: 'scale(1.1)',
+            },
+            transition: 'all 0.2s ease',
+          }}
+        >
+          ×
+        </IconButton>
+
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 mb-2">
+            Verificación
+          </h1>
+          <p className="text-gray-700">
+            Para continuar, solicita un código de verificación y luego ingrésalo aquí.
+          </p>
+        </Box>
+
+        {codeSent && (
+          <Box sx={{ textAlign: 'center', mb: 3, color: '#059669' }}>
+            ¡Código enviado!
+          </Box>
         )}
-        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+        {requestError && (
+          <Box sx={{ 
+            mb: 3, 
+            p: 2, 
+            bgcolor: '#fee2e2', 
+            border: '1px solid #ef4444',
+            color: '#b91c1c',
+            borderRadius: '0.5rem',
+            textAlign: 'center'
+          }}>
+            {requestError}
+          </Box>
+        )}
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             label="Código de verificación"
             variant="outlined"
@@ -103,22 +158,88 @@ const VerificationAlert: React.FC<VerificationAlertProps> = ({
             error={!!error}
             helperText={error}
             disabled={isLoading || !codeSent}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'rgba(255, 255, 255, 0.5)',
+                '&:hover fieldset': {
+                  borderColor: '#1a1a1a',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#1a1a1a',
+                },
+              },
+            }}
             inputProps={{
               maxLength: 6,
-              style: { textAlign: 'center', letterSpacing: '0.5em', fontSize: '1.2em' }
+              style: { 
+                textAlign: 'center', 
+                letterSpacing: '0.5em', 
+                fontSize: '1.2em',
+                fontFamily: 'Montserrat, sans-serif'
+              }
             }}
           />
-          <Button
-            variant="contained"
-            onClick={handleVerification}
-            disabled={isLoading || code.length !== 6 || !codeSent}
-            sx={{ mt: 1 }}
-          >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Verificar Código'}
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 2 }}>
+            <Button
+              variant="contained"
+              onClick={requestVerificationCode}
+              disabled={requestingCode || codeSent}
+              sx={{
+                px: 4,
+                py: 1.5,
+                background: 'linear-gradient(to right, #1a1a1a, #4a4a4a)',
+                color: 'white',
+                fontWeight: 600,
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  background: 'linear-gradient(to right, #2a2a2a, #5a5a5a)',
+                  color: '#4ade80',
+                  transform: 'scale(1.02)',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                },
+                '&.Mui-disabled': {
+                  background: '#e5e5e5',
+                  color: '#9ca3af',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {requestingCode ? 'Enviando código...' : 'Solicitar Código'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleVerification}
+              disabled={isLoading || code.length !== 6 || !codeSent}
+              sx={{
+                px: 4,
+                py: 1.5,
+                background: 'linear-gradient(to right, #1a1a1a, #4a4a4a)',
+                color: 'white',
+                fontWeight: 600,
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  background: 'linear-gradient(to right, #2a2a2a, #5a5a5a)',
+                  color: '#4ade80',
+                  transform: 'scale(1.02)',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                },
+                '&.Mui-disabled': {
+                  background: '#e5e5e5',
+                  color: '#9ca3af',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {isLoading ? 'Verificando...' : 'Verificar Código'}
+            </Button>
+          </Box>
         </Box>
-      </Alert>
-    </Box>
+      </Paper>
+    </Modal>
   );
 };
 

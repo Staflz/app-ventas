@@ -3,6 +3,8 @@ import Video from "../../assets/Video.mp4";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import VerificationAlert from '../common/VerificationAlert';
+import PasswordResetModal from '../common/PasswordResetModal';
+import { IconButton } from '@mui/material';
 
 // Frontend para la login page
 
@@ -13,6 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [showVerification, setShowVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -25,8 +28,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-//const response = await//
-//axios.post('http://localhost:3000/api/auth/login', {
+
     try {
       await axios.post(`${API_URL}/api/auth/login`, {
         email: form.email,
@@ -69,7 +71,24 @@ const Login = () => {
       {/* Contenido */}
       <div className="relative flex items-center justify-center min-h-screen p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/50">
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/50 relative">
+            <IconButton
+              onClick={() => navigate('/')}
+              sx={{
+                position: 'absolute',
+                left: 8,
+                top: 8,
+                color: '#1a1a1a',
+                '&:hover': {
+                  color: '#4ade80',
+                  transform: 'scale(1.1)',
+                },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              ‹
+            </IconButton>
+
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 mb-4 text-center">
               Iniciar Sesión
             </h1>
@@ -83,13 +102,6 @@ const Login = () => {
               </div>
             )}
 
-            {showVerification && pendingEmail ? (
-              <VerificationAlert
-                email={pendingEmail}
-                onVerificationSuccess={handleVerificationSuccess}
-                onClose={() => setShowVerification(false)}
-              />
-            ) : (
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div className="space-y-2 mb-6">
@@ -123,12 +135,13 @@ const Login = () => {
                 </div>
               </div>
 
-              <div className="flex justify-center pt-4">
+              <div className="flex flex-col items-center space-y-4">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`px-8 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg
-                           font-semibold shadow-lg shadow-gray-900/30
+                  className={`px-8 py-3 rounded-lg font-semibold
+                           bg-gradient-to-r from-gray-900 to-gray-800 text-white
+                           shadow-lg shadow-gray-900/30
                            hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300
                            transform transition-all duration-300 hover:scale-[1.02]
                            active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
@@ -136,12 +149,36 @@ const Login = () => {
                 >
                   {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordReset(true)}
+                  className="text-gray-600 hover:text-emerald-600 transition-colors duration-300 text-sm"
+                >
+                  ¿Has olvidado tu contraseña?
+                </button>
               </div>
             </form>
-            )}
           </div>
         </div>
       </div>
+
+      {/* VerificationAlert como modal superpuesto */}
+      {pendingEmail && (
+        <VerificationAlert
+          email={pendingEmail}
+          open={showVerification}
+          onVerificationSuccess={handleVerificationSuccess}
+          onClose={() => setShowVerification(false)}
+        />
+      )}
+
+      {/* PasswordResetModal como modal superpuesto */}
+      <PasswordResetModal
+        open={showPasswordReset}
+        onClose={() => setShowPasswordReset(false)}
+        onSuccess={() => setShowPasswordReset(false)}
+      />
     </div>
   );
 };

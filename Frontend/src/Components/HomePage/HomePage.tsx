@@ -29,14 +29,24 @@ const HomePage = () => {
                         <div className="flex justify-around w-full">
                             <Link to="/register" className="w-1/2 pr-2">
                                 <button
-                                    className="w-full px-8 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold shadow-lg shadow-gray-900/30 hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                                    className="w-full px-8 py-3 rounded-lg font-semibold
+                                             bg-gradient-to-r from-gray-900 to-gray-800 text-white
+                                             shadow-lg shadow-gray-900/30
+                                             hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300
+                                             transform transition-all duration-300 hover:scale-[1.02]
+                                             active:scale-[0.98]"
                                 >
                                     Registrar
                                 </button>
                             </Link>
                             <Link to="/login" className="w-1/2 pl-2">
                                 <button
-                                    className="w-full px-8 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold shadow-lg shadow-gray-900/30 hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                                    className="w-full px-8 py-3 rounded-lg font-semibold
+                                             bg-gradient-to-r from-gray-900 to-gray-800 text-white
+                                             shadow-lg shadow-gray-900/30
+                                             hover:from-gray-800 hover:to-gray-700 hover:text-emerald-300
+                                             transform transition-all duration-300 hover:scale-[1.02]
+                                             active:scale-[0.98]"
                                 >
                                     Ingresar
                                 </button>

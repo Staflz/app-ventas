@@ -3,6 +3,9 @@ import { supabase } from './supabaseClient';
 //
 import cors from 'cors';
 import authRoutes from './routes/auth.routes';
+import ventasRoutes from './routes/ventas.routes';
+import transaccionesRoutes from './routes/transacciones.routes';
+import resetRoutes from './routes/reset.routes';
 //
 
 const app = express();
@@ -37,6 +40,9 @@ app.get('/check-supabase', asyncHandler(async (req: Request, res: Response) => {
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/ventas', ventasRoutes);
+app.use('/api/transacciones', transaccionesRoutes);
+app.use('/api/auth', resetRoutes); // Montar las rutas de reset bajo /api/auth
 //
 
 const PORT = process.env.PORT || 3000;
