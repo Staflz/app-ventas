@@ -100,7 +100,7 @@ router.post('/', createVentaValidation, async (req: Request, res: Response): Pro
     // Buscar el producto en el inventario por su alias
     const { data: productoData, error: productoError } = await supabaseAdmin
       .from('inventarios')
-      .select('id, precio_unitario')
+      .select('id, precio_unitario, stock')
       .eq('alias', producto_alias)
       .single();
 
@@ -110,10 +110,31 @@ router.post('/', createVentaValidation, async (req: Request, res: Response): Pro
       return;
     }
 
+    // Verificar si hay suficiente stock
+    if (productoData.stock < cantidad) {
+      res.status(400).json({ message: 'No hay suficiente stock disponible' });
+      return;
+    }
+
     // Calcular el total usando el precio unitario del producto
     const total = cantidad * productoData.precio_unitario;
 
-    const { data: venta, error } = await supabaseAdmin
+    // Buscar la billetera "Caja" del usuario
+    const { data: billeteraData, error: billeteraError } = await supabaseAdmin
+      .from('billeteras')
+      .select('id, saldo')
+      .eq('usuario_id', userData.id)
+      .eq('nombre', 'Caja')
+      .single();
+
+    if (billeteraError || !billeteraData) {
+      console.error('Error al buscar billetera Caja:', billeteraError);
+      res.status(404).json({ message: 'Billetera Caja no encontrada' });
+      return;
+    }
+
+    // Iniciar una transacción para asegurar la consistencia de los datos
+    const { data: venta, error: ventaError } = await supabaseAdmin
       .from('ventas')
       .insert([
         {
@@ -129,9 +150,38 @@ router.post('/', createVentaValidation, async (req: Request, res: Response): Pro
       .select()
       .single();
 
-    if (error) {
-      console.error('Error al crear venta:', error);
-      res.status(500).json({ message: 'Error al crear la venta', error: error.message });
+    if (ventaError) {
+      console.error('Error al crear venta:', ventaError);
+      res.status(500).json({ message: 'Error al crear la venta', error: ventaError.message });
+      return;
+    }
+
+    // Actualizar el saldo de la billetera Caja
+    const nuevoSaldo = billeteraData.saldo + total;
+    const { error: updateError } = await supabaseAdmin
+      .from('billeteras')
+      .update({ 
+        saldo: nuevoSaldo,
+        ultima_actualizacion: new Date().toISOString()
+      })
+      .eq('id', billeteraData.id);
+
+    if (updateError) {
+      console.error('Error al actualizar saldo de billetera:', updateError);
+      res.status(500).json({ message: 'Error al actualizar el saldo de la billetera', error: updateError.message });
+      return;
+    }
+
+    // Actualizar el stock del producto
+    const nuevoStock = productoData.stock - cantidad;
+    const { error: stockError } = await supabaseAdmin
+      .from('inventarios')
+      .update({ stock: nuevoStock })
+      .eq('id', productoData.id);
+
+    if (stockError) {
+      console.error('Error al actualizar stock:', stockError);
+      res.status(500).json({ message: 'Error al actualizar el stock del producto', error: stockError.message });
       return;
     }
 

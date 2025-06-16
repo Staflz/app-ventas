@@ -10,6 +10,7 @@ import billeterasRoutes from './routes/billeteras.routes';
 import transferenciasRoutes from './routes/transferencias.routes';
 import inventariosRoutes from './routes/inventarios.routes';
 import movimientosRoutes from './routes/movimientos.routes';
+import viewRoutes from './routes/view.routes';
 //
 
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/billeteras', billeterasRoutes);
 app.use('/api/transferencias', transferenciasRoutes);
 app.use('/api/productos', inventariosRoutes);
 app.use('/api/movimientos', movimientosRoutes);
+app.use('/api/view', viewRoutes);
 //
 
 const PORT = process.env.PORT || 3000;

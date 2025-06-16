@@ -48,6 +48,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [ventaEditando, setVentaEditando] = useState<string | null>(null);
+    const [balanceTotal, setBalanceTotal] = useState<number>(0);
 
     // Estado para las transacciones
     const [nuevaTransaccion, setNuevaTransaccion] = useState({
@@ -93,10 +94,25 @@ const Dashboard = () => {
         }
     };
 
-    // Cargar ventas y transacciones al montar el componente
+    // Función para cargar el balance total
+    const cargarBalanceTotal = async () => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const response = await axios.get(`${API_URL}/api/view/balance-total`, {
+                params: { email: user.email }
+            });
+            setBalanceTotal(response.data.balanceTotal);
+        } catch (err) {
+            console.error('Error al cargar el balance total:', err);
+            setError('Error al cargar el balance total');
+        }
+    };
+
+    // Cargar ventas, transacciones y balance total al montar el componente
     useEffect(() => {
         cargarVentas();
         cargarTransacciones();
+        cargarBalanceTotal();
     }, []);
 
     // Función para manejar cambios en el formulario
@@ -337,7 +353,7 @@ const Dashboard = () => {
                     <div className="flex flex-col items-center w-[405px] h-[346px]">
                         <div className="w-[405px] h-[144px] border border-emerald-300 rounded-lg p-2 flex flex-col justify-center items-center shadow-sm bg-white mb-2">
                             <span className=" mb-5 text-2xl font-bold text-gray-700">Balance Total</span>
-                            <span className="text-emerald-500 text-4xl font-bold">0$</span>
+                            <span className="text-emerald-500 text-4xl font-bold">{balanceTotal}$</span>
                         </div>
                         {/* Logo más grande */}
                         <div 
