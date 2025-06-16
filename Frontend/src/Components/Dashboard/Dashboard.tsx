@@ -228,6 +228,13 @@ const Dashboard = () => {
         navigate('/login');
     };
 
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab);
+        if (tab === "billeteras") {
+            navigate("/billeteras");
+        }
+    };
+
     return (
         <div className="min-h-screen w-full relative">
             {/* Fondo con imagen y efecto de oscurecimiento */}
@@ -349,7 +356,7 @@ const Dashboard = () => {
                                 {TABS.map(tab => (
                                 <button
                                     key={tab.value}
-                                    onClick={() => setActiveTab(tab.value)}
+                                    onClick={() => handleTabChange(tab.value)}
                                     className={`px-4 py-1 font-semibold transition-colors duration-200 text-sm ${
                                         activeTab === tab.value
                                             ? 'bg-black text-white'
@@ -556,6 +563,10 @@ const Dashboard = () => {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                        {/* Botón de filtro */}
+                        <div className="flex justify-center mt-4">
+                                <button className="bg-gradient-to-b from-black to-black text-white rounded-lg px-4 py-1 text-lg hover:from-gray-800 hover:to-gray-800">...</button>
                         </div>
                     </div>
                 </div>            

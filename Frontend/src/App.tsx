@@ -6,6 +6,7 @@ import Dashboard from "./Components/Dashboard/Dashboard";
 import ResetPassword from "./Components/ResetPasswordPage/ResetPassword";
 import NotFound from "./Components/common/NotFound";
 import ProtectedRoute from "./Components/common/ProtectedRoute";
+import Billeteras from "./Components/Dashboard/Billeteras";
 
 function App() {
 
@@ -27,6 +28,14 @@ function App() {
       element: (
         <ProtectedRoute>
           <Dashboard />
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/billeteras",
+      element: (
+        <ProtectedRoute>
+          <Billeteras />
         </ProtectedRoute>
       )
     },

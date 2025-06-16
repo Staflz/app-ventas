@@ -6,6 +6,8 @@ import authRoutes from './routes/auth.routes';
 import ventasRoutes from './routes/ventas.routes';
 import transaccionesRoutes from './routes/transacciones.routes';
 import resetRoutes from './routes/reset.routes';
+import billeterasRoutes from './routes/billeteras.routes';
+import transferenciasRoutes from './routes/transferencias.routes';
 //
 
 const app = express();
@@ -43,6 +45,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ventas', ventasRoutes);
 app.use('/api/transacciones', transaccionesRoutes);
 app.use('/api/auth', resetRoutes); // Montar las rutas de reset bajo /api/auth
+app.use('/api/billeteras', billeterasRoutes);
+app.use('/api/transferencias', transferenciasRoutes);
 //
 
 const PORT = process.env.PORT || 3000;
