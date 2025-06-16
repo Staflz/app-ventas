@@ -230,8 +230,10 @@ const Dashboard = () => {
 
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
-        if (tab === "billeteras") {
-            navigate("/billeteras");
+        if (tab === 'billeteras') {
+            navigate('/billeteras');
+        } else if (tab === 'inventario') {
+            navigate('/inventario');
         }
     };
 
@@ -338,7 +340,10 @@ const Dashboard = () => {
                             <span className="text-emerald-500 text-4xl font-bold">0$</span>
                         </div>
                         {/* Logo más grande */}
-                        <div className="w-20 h-20 rounded-full overflow-hidden shadow-md mt-9">
+                        <div 
+                            onClick={() => navigate('/account')}
+                            className="w-20 h-20 rounded-full overflow-hidden shadow-md mt-9 cursor-pointer hover:scale-105 transition-transform duration-200"
+                        >
                             <img src={Logo} alt="Logo" className="object-cover w-full h-full" />
                         </div>
                         {/* Botón de cerrar sesión pequeño y debajo de las tablas */}

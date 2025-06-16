@@ -7,6 +7,8 @@ import ResetPassword from "./Components/ResetPasswordPage/ResetPassword";
 import NotFound from "./Components/common/NotFound";
 import ProtectedRoute from "./Components/common/ProtectedRoute";
 import Billeteras from "./Components/Dashboard/Billeteras";
+import Inventario from "./Components/Dashboard/Inventario";
+import Account from "./Components/Account/Account";
 
 function App() {
 
@@ -32,10 +34,26 @@ function App() {
       )
     },
     {
+      path: "/account",
+      element: (
+        <ProtectedRoute>
+          <Account />
+        </ProtectedRoute>
+      )
+    },
+    {
       path: "/billeteras",
       element: (
         <ProtectedRoute>
           <Billeteras />
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/inventario",
+      element: (
+        <ProtectedRoute>
+          <Inventario />
         </ProtectedRoute>
       )
     },

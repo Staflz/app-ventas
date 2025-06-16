@@ -12,7 +12,11 @@
   }
   
   body {
-    @apply h-full m-0 p-0;
+    @apply h-full w-full m-0 p-0;
+  }
+
+  #root {
+    @apply h-full w-full;
   }
 }
 
@@ -54,6 +58,14 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  width: 100%;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 h1 {
