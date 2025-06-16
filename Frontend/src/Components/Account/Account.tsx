@@ -1,3 +1,5 @@
+import Logo from "../../assets/Logo.png";
+
 const Account = () => {
     return (
         <div className="min-h-screen w-screen flex items-center justify-center bg-white px-4">
